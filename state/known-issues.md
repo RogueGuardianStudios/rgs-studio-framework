@@ -205,6 +205,7 @@ The resolution path must be preserved.
   not mean "do everything." The correct response was to ask a
   follow-up or wait for explicit direction. Instead, the
   orchestrator assumed maximum authority and started executing.
+
   This directly contradicts the orchestrator's own governance:
   "Make decisions outside your defined authority" is listed
   under "What You Never Do." Modifying orchestrator.md requires
