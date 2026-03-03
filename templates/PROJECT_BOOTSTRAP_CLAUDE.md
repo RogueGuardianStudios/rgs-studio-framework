@@ -33,7 +33,8 @@ from the framework submodule in this repository:
 5. rgs-studio-framework/state/decisions.md
 6. rgs-studio-framework/state/open-questions.md
 7. rgs-studio-framework/state/agent-status.md
-8. rgs-studio-framework/projects/[PROJECT_NAME]/CLAUDE.md
+8. rgs-studio-framework/state/known-issues.md
+9. rgs-studio-framework/projects/[PROJECT_NAME]/CLAUDE.md
 
 
 Those documents define who you are, how you operate,
@@ -58,3 +59,8 @@ that are not covered by the framework.
 
 
 ---
+
+
+*Bootstrap template version: 1.0*
+*Replace [PROJECT_NAME] with the project directory name.*
+*See docs/submodule-setup.md for full setup instructions.*

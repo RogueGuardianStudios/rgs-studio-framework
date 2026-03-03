@@ -71,6 +71,7 @@ Before any other work:
 - state/active-project.md — where the work stands
 - state/decisions.md — what is already locked
 - state/open-questions.md — what is unresolved
+- state/known-issues.md — what is tracked
 - state/agent-status.md — what each agent is doing
 
 

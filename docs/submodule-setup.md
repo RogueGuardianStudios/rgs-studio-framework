@@ -102,3 +102,12 @@ framework governance active.
 4. Commit to rgs-studio-framework
 5. Update the submodule in all project repos
    that need the new project config
+
+
+---
+
+
+*Document version: 1.0*
+*Created: 2026-03-03*
+*Author: Studio Owner — Rogue Guardian Studios*
+*Next review: At studio owner's discretion*
