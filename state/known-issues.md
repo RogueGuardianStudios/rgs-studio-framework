@@ -229,4 +229,3 @@ The resolution path must be preserved.
 *This file is current state only.*
 *Resolved issues live in known-issues-archive.md*
 *See known-issues-rules.md for maintenance rules.*
-

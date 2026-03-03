@@ -176,4 +176,3 @@ be preserved.
 *This file reflects active questions only.*
 *Resolved questions live in open-questions-archive.md*
 *See open-questions-rules.md for maintenance rules.*
-

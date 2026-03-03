@@ -158,6 +158,7 @@ causing repeated work and wasted turns.
 
 When briefing sub-agents:
 
+
 - Scope tightly. One agent, one focused question.
   "Find all hardcoded colors in these 3 files" not
   "audit the entire editor codebase for colors."
@@ -338,3 +339,4 @@ have checked, not just been told.
 *Created: 2026-03-02*
 *Author: Studio Owner — Rogue Guardian Studios*
 *Next review: At studio owner's discretion*
+  everything at once.
