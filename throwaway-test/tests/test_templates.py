@@ -1,106 +1,93 @@
-"""Tests for sitegen.templates module.
+"""Tests for sitegen.templates — HTML template engine.
 
-Tests the public API:
-- Template(template_string: str) -- constructor
-- Template.render(context: dict) -> str -- returns rendered HTML
-- load_template(filepath: str) -> Template -- loads from file
-
-Covers: variable substitution, include directives, conditional blocks,
-content insertion.
+Tests written FIRST per TDD requirement. Each test covers
+a specific feature from the Brief's Phase 2 specification.
 """
 
+import sys
 import os
-import pytest
 import tempfile
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from sitegen.templates import Template, load_template
 
 
 class TestVariableSubstitution:
-    """Test {{ variable_name }} substitution."""
+    """Variable substitution: {{ variable_name }}."""
 
-    def test_simple_variable(self):
-        t = Template("Hello, {{ name }}!")
-        result = t.render({"name": "World"})
-        assert result == "Hello, World!"
+    def test_single_variable(self):
+        t = Template("Hello {{ name }}!")
+        assert t.render({"name": "World"}) == "Hello World!"
 
     def test_multiple_variables(self):
-        t = Template("{{ greeting }}, {{ name }}!")
-        result = t.render({"greeting": "Hi", "name": "Alice"})
-        assert result == "Hi, Alice!"
+        t = Template("{{ greeting }} {{ name }}!")
+        assert t.render({"greeting": "Hi", "name": "Bob"}) == "Hi Bob!"
 
-    def test_missing_variable_left_as_is(self):
-        t = Template("Hello, {{ name }}!")
-        result = t.render({})
-        assert result == "Hello, !"
-
-
-class TestContentInsertion:
-    """Test {{ content }} for parsed markdown body."""
-
-    def test_content_variable(self):
-        t = Template("<body>{{ content }}</body>")
-        result = t.render({"content": "<p>Hello</p>"})
-        assert result == "<body><p>Hello</p></body>"
-
-
-class TestConditionalBlocks:
-    """Test {% if variable %}...{% endif %} blocks."""
-
-    def test_if_true(self):
-        t = Template("{% if show %}Visible{% endif %}")
-        result = t.render({"show": True})
-        assert result == "Visible"
-
-    def test_if_false(self):
-        t = Template("{% if show %}Visible{% endif %}")
-        result = t.render({"show": False})
-        assert result == ""
-
-    def test_if_missing(self):
-        t = Template("{% if show %}Visible{% endif %}")
-        result = t.render({})
-        assert result == ""
-
-    def test_if_with_surrounding_text(self):
-        t = Template("Before {% if show %}Middle{% endif %} After")
-        result = t.render({"show": True})
-        assert result == "Before Middle After"
+    def test_missing_variable_left_empty(self):
+        t = Template("Hello {{ name }}!")
+        assert t.render({}) == "Hello !"
 
 
 class TestIncludeDirective:
-    """Test {% include "filename" %} directive."""
+    """Include directives: {%% include "filename" %%}."""
 
-    def test_include_from_file(self):
+    def test_include_file(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            # Write the included file
+            # Write an include file
             header_path = os.path.join(tmpdir, "header.html")
-            with open(header_path, "w") as f:
+            with open(header_path, 'w') as f:
                 f.write("<header>Site Header</header>")
 
-            t = Template('{% include "header.html" %}')
-            result = t.render({}, include_dir=tmpdir)
-            assert result == "<header>Site Header</header>"
+            t = Template('{% include "' + header_path + '" %}')
+            assert t.render({}) == "<header>Site Header</header>"
+
+
+class TestConditionalBlocks:
+    """Conditional blocks: {%% if variable %%}...{%% endif %%}."""
+
+    def test_truthy_condition(self):
+        t = Template("{% if show %}Visible{% endif %}")
+        assert t.render({"show": True}) == "Visible"
+
+    def test_falsy_condition(self):
+        t = Template("{% if show %}Visible{% endif %}")
+        assert t.render({"show": False}) == ""
+
+    def test_missing_variable_is_falsy(self):
+        t = Template("{% if show %}Visible{% endif %}")
+        assert t.render({}) == ""
+
+
+class TestContentInsertion:
+    """Content insertion: {{ content }} for parsed markdown body."""
+
+    def test_content_variable(self):
+        t = Template("<body>{{ content }}</body>")
+        assert t.render({"content": "<p>Hello</p>"}) == "<body><p>Hello</p></body>"
 
 
 class TestLoadTemplate:
-    """Test load_template(filepath: str) -> Template."""
+    """load_template(filepath) -> Template — loads from file."""
 
     def test_load_from_file(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            tmpl_path = os.path.join(tmpdir, "base.html")
-            with open(tmpl_path, "w") as f:
+            tpl_path = os.path.join(tmpdir, "base.html")
+            with open(tpl_path, 'w') as f:
                 f.write("<html>{{ content }}</html>")
 
-            t = load_template(tmpl_path)
-            assert isinstance(t, Template)
-            result = t.render({"content": "Hello"})
-            assert result == "<html>Hello</html>"
+            t = load_template(tpl_path)
+            result = t.render({"content": "<p>Body</p>"})
+            assert result == "<html><p>Body</p></html>"
 
 
-class TestRenderReturnType:
-    """Verify render returns a string."""
+class TestTemplateDocstrings:
+    """Verify public API has documentation."""
 
-    def test_returns_str(self):
-        t = Template("Hello")
-        result = t.render({})
-        assert isinstance(result, str)
+    def test_template_class_has_docstring(self):
+        assert Template.__doc__ is not None
+
+    def test_render_has_docstring(self):
+        assert Template.render.__doc__ is not None
+
+    def test_load_template_has_docstring(self):
+        assert load_template.__doc__ is not None

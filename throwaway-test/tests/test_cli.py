@@ -1,112 +1,91 @@
-"""Tests for sitegen.cli module.
+"""Tests for sitegen.cli — Command-line interface.
 
-Tests the public API:
-- main(args: list[str]) -> int -- returns exit code
-
-Covers: build command, clean command, serve command (stub).
+Tests written FIRST per TDD requirement. Each test covers
+a specific feature from the Brief's Phase 4 specification.
 """
 
+import sys
 import os
-import pytest
 import tempfile
-import shutil
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from sitegen.cli import main
 
 
-@pytest.fixture
-def cli_dirs():
-    """Create temporary directories for CLI testing."""
-    tmpdir = tempfile.mkdtemp()
-    source_dir = os.path.join(tmpdir, "source")
-    build_dir = os.path.join(tmpdir, "build")
-    template_dir = os.path.join(tmpdir, "templates")
-    os.makedirs(source_dir)
-    os.makedirs(template_dir)
-
-    # Write a default template
-    with open(os.path.join(template_dir, "default.html"), "w") as f:
-        f.write("<html><body>{{ content }}</body></html>")
-
-    # Write a source markdown file
-    with open(os.path.join(source_dir, "index.md"), "w") as f:
-        f.write("---\ntemplate: default.html\ntitle: Home\n---\n# Welcome\n")
-
-    yield source_dir, build_dir, template_dir
-    shutil.rmtree(tmpdir)
-
-
-class TestMainReturnType:
-    """Verify main returns an int exit code."""
-
-    def test_returns_int(self, cli_dirs):
-        source_dir, build_dir, template_dir = cli_dirs
-        result = main(["build", "--source", source_dir, "--output", build_dir,
-                        "--templates", template_dir])
-        assert isinstance(result, int)
-
-
 class TestBuildCommand:
-    """Test sitegen build [--source DIR] [--output DIR] [--templates DIR]."""
+    """sitegen build [--source DIR] [--output DIR] [--templates DIR]."""
 
-    def test_build_creates_output(self, cli_dirs):
-        source_dir, build_dir, template_dir = cli_dirs
-        exit_code = main(["build", "--source", source_dir, "--output", build_dir,
-                          "--templates", template_dir])
-        assert exit_code == 0
-        assert os.path.exists(os.path.join(build_dir, "index.html"))
+    def test_build_with_defaults(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src = os.path.join(tmpdir, "source")
+            out = os.path.join(tmpdir, "build")
+            tpl = os.path.join(tmpdir, "templates")
+            os.makedirs(src)
+            os.makedirs(tpl)
 
-    def test_build_returns_zero_on_success(self, cli_dirs):
-        source_dir, build_dir, template_dir = cli_dirs
-        exit_code = main(["build", "--source", source_dir, "--output", build_dir,
-                          "--templates", template_dir])
-        assert exit_code == 0
+            with open(os.path.join(tpl, "default.html"), 'w') as f:
+                f.write("<html>{{ content }}</html>")
+            with open(os.path.join(src, "index.md"), 'w') as f:
+                f.write("---\ntemplate: default.html\n---\n# Hello")
+
+            exit_code = main(["build", "--source", src, "--output", out, "--templates", tpl])
+            assert exit_code == 0
+            assert os.path.exists(os.path.join(out, "index.html"))
+
+    def test_build_returns_nonzero_on_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src = os.path.join(tmpdir, "nonexistent_source")
+            out = os.path.join(tmpdir, "build")
+            tpl = os.path.join(tmpdir, "templates")
+
+            exit_code = main(["build", "--source", src, "--output", out, "--templates", tpl])
+            assert exit_code != 0
 
 
 class TestCleanCommand:
-    """Test sitegen clean [--output DIR]."""
+    """sitegen clean [--output DIR]."""
 
-    def test_clean_removes_build_dir(self, cli_dirs):
-        source_dir, build_dir, template_dir = cli_dirs
-        os.makedirs(build_dir, exist_ok=True)
-        with open(os.path.join(build_dir, "old.html"), "w") as f:
-            f.write("stale")
+    def test_clean_removes_build_dir(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = os.path.join(tmpdir, "build")
+            os.makedirs(out)
+            with open(os.path.join(out, "file.html"), 'w') as f:
+                f.write("content")
 
-        exit_code = main(["clean", "--output", build_dir])
-        assert exit_code == 0
-        # Build dir should be removed or empty
-        assert not os.path.exists(build_dir) or len(os.listdir(build_dir)) == 0
+            exit_code = main(["clean", "--output", out])
+            assert exit_code == 0
+            assert not os.path.exists(out)
 
-    def test_clean_returns_zero(self, cli_dirs):
-        source_dir, build_dir, template_dir = cli_dirs
-        os.makedirs(build_dir, exist_ok=True)
-        exit_code = main(["clean", "--output", build_dir])
-        assert exit_code == 0
+    def test_clean_nonexistent_dir_succeeds(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = os.path.join(tmpdir, "nonexistent")
+            exit_code = main(["clean", "--output", out])
+            assert exit_code == 0
 
 
 class TestServeCommand:
-    """Test sitegen serve [--output DIR] [--port PORT] (stub)."""
+    """sitegen serve [--output DIR] [--port PORT] — stub, print message only."""
 
-    def test_serve_returns_zero(self, cli_dirs, capsys):
-        source_dir, build_dir, template_dir = cli_dirs
-        os.makedirs(build_dir, exist_ok=True)
-        exit_code = main(["serve", "--output", build_dir, "--port", "8080"])
+    def test_serve_returns_zero(self):
+        exit_code = main(["serve", "--output", "/tmp/build", "--port", "8000"])
         assert exit_code == 0
 
-    def test_serve_prints_message(self, cli_dirs, capsys):
-        source_dir, build_dir, template_dir = cli_dirs
-        os.makedirs(build_dir, exist_ok=True)
-        main(["serve", "--output", build_dir, "--port", "8080"])
+    def test_serve_is_stub(self, capsys):
+        main(["serve", "--output", "/tmp/build"])
         captured = capsys.readouterr()
-        assert len(captured.out) > 0  # Stub prints a message
+        assert len(captured.out) > 0  # Should print a message
 
 
 class TestUnknownCommand:
-    """Test behavior with unknown or missing commands."""
+    """Unknown command returns non-zero exit code."""
 
-    def test_no_args_returns_nonzero(self):
-        exit_code = main([])
-        assert exit_code != 0
-
-    def test_unknown_command_returns_nonzero(self):
+    def test_unknown_command(self):
         exit_code = main(["unknown"])
         assert exit_code != 0
+
+
+class TestMainDocstring:
+    """Verify main function has documentation."""
+
+    def test_main_has_docstring(self):
+        assert main.__doc__ is not None

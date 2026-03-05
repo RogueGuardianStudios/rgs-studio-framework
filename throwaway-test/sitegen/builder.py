@@ -1,4 +1,4 @@
-"""Site builder for the sitegen static site generator.
+"""sitegen.builder — Site building from markdown source directories.
 
 Walks a source directory of markdown files, applies templates,
 and outputs rendered HTML to a build directory. Supports recursive
@@ -8,6 +8,7 @@ asset copying, and clean builds.
 
 import os
 import shutil
+
 from sitegen.parser import parse
 from sitegen.templates import load_template
 
@@ -16,150 +17,133 @@ class BuildResult:
     """Result of a site build operation.
 
     Attributes:
-        pages_built: Number of pages successfully built.
+        pages_built: Number of markdown pages successfully rendered.
         errors: List of error messages encountered during the build.
     """
 
-    def __init__(self):
-        self.pages_built: int = 0
-        self.errors: list[str] = []
+    def __init__(self, pages_built: int, errors: list):
+        """Initialize a BuildResult.
+
+        Args:
+            pages_built: Count of pages successfully built.
+            errors: List of error strings from the build.
+        """
+        self.pages_built = pages_built
+        self.errors = errors
 
 
 class SiteBuilder:
-    """Builds a static site from markdown source files.
+    """Builds a static site from markdown sources using templates.
 
-    Args:
-        source_dir: Path to the directory containing markdown source files.
-        build_dir: Path to the output directory for rendered HTML.
-        template_dir: Path to the directory containing HTML templates.
+    Walks the source directory recursively, extracts front matter,
+    selects templates, renders markdown to HTML, and copies assets.
     """
 
     def __init__(self, source_dir: str, build_dir: str, template_dir: str):
+        """Initialize the SiteBuilder.
+
+        Args:
+            source_dir: Path to the source directory containing markdown files.
+            build_dir: Path to the output build directory.
+            template_dir: Path to the directory containing HTML templates.
+        """
         self._source_dir = source_dir
         self._build_dir = build_dir
         self._template_dir = template_dir
 
     def build(self) -> BuildResult:
-        """Build the static site.
+        """Build the site: clean, render markdown, copy assets.
 
-        Cleans the build directory, walks the source directory recursively,
-        processes markdown files through templates, and copies assets.
+        Deletes the build directory if it exists (clean build),
+        walks the source directory recursively, renders each
+        markdown file through its selected template, and copies
+        non-markdown assets to the build directory.
 
         Returns:
-            A BuildResult with the count of pages built and any errors.
+            A BuildResult with pages_built count and any errors.
         """
-        result = BuildResult()
+        pages_built = 0
+        errors = []
 
-        # Clean build: delete and recreate build directory
+        # Clean build — delete build dir before building
         if os.path.exists(self._build_dir):
             shutil.rmtree(self._build_dir)
-        os.makedirs(self._build_dir)
+        os.makedirs(self._build_dir, exist_ok=True)
 
         # Walk source directory recursively
         for dirpath, dirnames, filenames in os.walk(self._source_dir):
             rel_dir = os.path.relpath(dirpath, self._source_dir)
-            if rel_dir == ".":
-                rel_dir = ""
+            out_dir = os.path.join(self._build_dir, rel_dir) if rel_dir != '.' else self._build_dir
+            os.makedirs(out_dir, exist_ok=True)
 
             for filename in filenames:
-                source_path = os.path.join(dirpath, filename)
+                src_path = os.path.join(dirpath, filename)
 
-                if filename.endswith(".md"):
-                    # Process markdown files
+                if filename.endswith('.md'):
+                    # Process markdown file
                     try:
-                        self._process_markdown(source_path, rel_dir, result)
+                        with open(src_path, 'r') as f:
+                            content = f.read()
+
+                        front_matter, body = self._extract_front_matter(content)
+                        template_name = front_matter.get('template')
+
+                        if not template_name:
+                            errors.append(f"No template specified in {src_path}")
+                            continue
+
+                        template_path = os.path.join(self._template_dir, template_name)
+                        if not os.path.exists(template_path):
+                            errors.append(f"Template not found: {template_name} for {src_path}")
+                            continue
+
+                        template = load_template(template_path)
+                        html_content = parse(body)
+
+                        # Build context from front matter + content
+                        context = dict(front_matter)
+                        context['content'] = html_content
+
+                        rendered = template.render(context)
+
+                        # Write output
+                        out_name = filename.replace('.md', '.html')
+                        out_path = os.path.join(out_dir, out_name)
+                        with open(out_path, 'w') as f:
+                            f.write(rendered)
+
+                        pages_built += 1
+
                     except Exception as e:
-                        result.errors.append(f"Error processing {source_path}: {e}")
+                        errors.append(f"Error processing {src_path}: {str(e)}")
                 else:
-                    # Copy asset files (CSS, images, etc.)
-                    self._copy_asset(source_path, rel_dir, filename)
+                    # Asset copying — CSS, images, etc.
+                    dst_path = os.path.join(out_dir, filename)
+                    shutil.copy2(src_path, dst_path)
 
-        return result
+        return BuildResult(pages_built=pages_built, errors=errors)
 
-    def _process_markdown(self, source_path: str, rel_dir: str, result: BuildResult):
-        """Process a single markdown file: extract front matter, parse, render template.
-
-        Args:
-            source_path: Absolute path to the markdown source file.
-            rel_dir: Relative directory path from source root.
-            result: BuildResult to update with counts/errors.
-        """
-        with open(source_path, "r") as f:
-            raw_content = f.read()
-
-        front_matter, body = _extract_front_matter(raw_content)
-
-        # Parse markdown body to HTML
-        html_body = parse(body)
-
-        # Build template context from front matter + content
-        context = dict(front_matter)
-        context["content"] = html_body
-
-        # Select template
-        template_name = front_matter.get("template", "default.html")
-        template_path = os.path.join(self._template_dir, template_name)
-        template = load_template(template_path)
-
-        # Render
-        rendered = template.render(context, include_dir=self._template_dir)
-
-        # Write output
-        output_dir = os.path.join(self._build_dir, rel_dir) if rel_dir else self._build_dir
-        os.makedirs(output_dir, exist_ok=True)
-
-        basename = os.path.splitext(os.path.basename(source_path))[0]
-        output_path = os.path.join(output_dir, f"{basename}.html")
-
-        with open(output_path, "w") as f:
-            f.write(rendered)
-
-        result.pages_built += 1
-
-    def _copy_asset(self, source_path: str, rel_dir: str, filename: str):
-        """Copy a non-markdown asset file to the build directory.
+    def _extract_front_matter(self, content: str) -> tuple:
+        """Extract YAML front matter from markdown content.
 
         Args:
-            source_path: Absolute path to the source asset file.
-            rel_dir: Relative directory path from source root.
-            filename: Name of the asset file.
+            content: Raw file content potentially starting with --- delimiters.
+
+        Returns:
+            Tuple of (front_matter_dict, body_string).
         """
-        output_dir = os.path.join(self._build_dir, rel_dir) if rel_dir else self._build_dir
-        os.makedirs(output_dir, exist_ok=True)
-        shutil.copy2(source_path, os.path.join(output_dir, filename))
+        if not content.startswith('---'):
+            return {}, content
 
+        parts = content.split('---', 2)
+        if len(parts) < 3:
+            return {}, content
 
-def _extract_front_matter(text: str) -> tuple[dict, str]:
-    """Extract YAML front matter from markdown text.
+        front_matter = {}
+        for line in parts[1].strip().split('\n'):
+            if ':' in line:
+                key, value = line.split(':', 1)
+                front_matter[key.strip()] = value.strip()
 
-    Front matter is delimited by --- lines at the start of the file.
-
-    Args:
-        text: Raw markdown text that may contain front matter.
-
-    Returns:
-        A tuple of (front_matter_dict, remaining_body_text).
-    """
-    if not text.startswith("---"):
-        return {}, text
-
-    lines = text.split("\n")
-    end_index = None
-    for i in range(1, len(lines)):
-        if lines[i].strip() == "---":
-            end_index = i
-            break
-
-    if end_index is None:
-        return {}, text
-
-    # Simple YAML key: value parsing
-    front_matter = {}
-    for line in lines[1:end_index]:
-        line = line.strip()
-        if ":" in line:
-            key, value = line.split(":", 1)
-            front_matter[key.strip()] = value.strip()
-
-    body = "\n".join(lines[end_index + 1:]).strip()
-    return front_matter, body
+        body = parts[2].strip()
+        return front_matter, body

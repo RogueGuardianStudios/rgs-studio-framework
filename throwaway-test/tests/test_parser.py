@@ -1,16 +1,18 @@
-"""Tests for sitegen.parser module.
+"""Tests for sitegen.parser — Markdown to HTML conversion.
 
-Tests the public API: parse(markdown_text: str) -> str
-Covers: headings, paragraphs, unordered lists, ordered lists,
-inline code, code blocks, links, bold, italic.
+Tests written FIRST per TDD requirement. Each test covers
+a specific feature from the Brief's Phase 1 specification.
 """
 
-import pytest
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from sitegen.parser import parse
 
 
 class TestHeadings:
-    """Test heading conversion (h1 through h6)."""
+    """Headings h1 through h6 via # syntax."""
 
     def test_h1(self):
         assert parse("# Hello") == "<h1>Hello</h1>"
@@ -32,86 +34,71 @@ class TestHeadings:
 
 
 class TestParagraphs:
-    """Test paragraph conversion (blank-line separated text blocks)."""
+    """Paragraphs — blank-line separated text blocks."""
 
     def test_single_paragraph(self):
-        result = parse("This is a paragraph.")
-        assert "<p>This is a paragraph.</p>" in result
+        assert parse("Hello world") == "<p>Hello world</p>"
 
     def test_two_paragraphs(self):
-        result = parse("First paragraph.\n\nSecond paragraph.")
-        assert "<p>First paragraph.</p>" in result
-        assert "<p>Second paragraph.</p>" in result
+        result = parse("First paragraph\n\nSecond paragraph")
+        assert result == "<p>First paragraph</p>\n<p>Second paragraph</p>"
 
 
 class TestUnorderedLists:
-    """Test unordered list conversion (- prefix)."""
+    """Unordered lists via - prefix."""
 
     def test_simple_list(self):
         md = "- Item one\n- Item two\n- Item three"
-        result = parse(md)
-        assert "<ul>" in result
-        assert "<li>Item one</li>" in result
-        assert "<li>Item two</li>" in result
-        assert "<li>Item three</li>" in result
-        assert "</ul>" in result
+        expected = "<ul>\n<li>Item one</li>\n<li>Item two</li>\n<li>Item three</li>\n</ul>"
+        assert parse(md) == expected
 
 
 class TestOrderedLists:
-    """Test ordered list conversion (1. prefix)."""
+    """Ordered lists via 1. prefix."""
 
     def test_simple_ordered_list(self):
         md = "1. First\n2. Second\n3. Third"
-        result = parse(md)
-        assert "<ol>" in result
-        assert "<li>First</li>" in result
-        assert "<li>Second</li>" in result
-        assert "<li>Third</li>" in result
-        assert "</ol>" in result
+        expected = "<ol>\n<li>First</li>\n<li>Second</li>\n<li>Third</li>\n</ol>"
+        assert parse(md) == expected
 
 
 class TestInlineCode:
-    """Test inline code conversion (`backticks`)."""
+    """Inline code via backticks."""
 
     def test_inline_code(self):
-        result = parse("Use `print()` to output.")
-        assert "<code>print()</code>" in result
+        assert parse("Use `print()` here") == "<p>Use <code>print()</code> here</p>"
 
 
 class TestCodeBlocks:
-    """Test fenced code block conversion (triple backtick)."""
+    """Code blocks via triple backtick fences."""
 
     def test_code_block(self):
         md = "```\nprint('hello')\n```"
-        result = parse(md)
-        assert "<pre><code>" in result
-        assert "print('hello')" in result
-        assert "</code></pre>" in result
+        expected = "<pre><code>print('hello')</code></pre>"
+        assert parse(md) == expected
 
 
 class TestLinks:
-    """Test link conversion ([text](url))."""
+    """Links via [text](url) syntax."""
 
     def test_link(self):
-        result = parse("[Click here](https://example.com)")
-        assert '<a href="https://example.com">Click here</a>' in result
+        md = "Visit [Example](https://example.com) now"
+        expected = '<p>Visit <a href="https://example.com">Example</a> now</p>'
+        assert parse(md) == expected
 
 
 class TestBoldAndItalic:
-    """Test bold (**text**) and italic (*text*) conversion."""
+    """Bold via **text** and italic via *text*."""
 
     def test_bold(self):
-        result = parse("This is **bold** text.")
-        assert "<strong>bold</strong>" in result
+        assert parse("This is **bold** text") == "<p>This is <strong>bold</strong> text</p>"
 
     def test_italic(self):
-        result = parse("This is *italic* text.")
-        assert "<em>italic</em>" in result
+        assert parse("This is *italic* text") == "<p>This is <em>italic</em> text</p>"
 
 
-class TestParseReturnType:
-    """Verify parse returns a string."""
+class TestParseDocstring:
+    """Verify parse function has documentation."""
 
-    def test_returns_str(self):
-        result = parse("Hello")
-        assert isinstance(result, str)
+    def test_parse_has_docstring(self):
+        assert parse.__doc__ is not None

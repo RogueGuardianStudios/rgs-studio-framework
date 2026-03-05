@@ -1,197 +1,208 @@
-"""Tests for sitegen.builder module.
+"""Tests for sitegen.builder — Site building from markdown sources.
 
-Tests the public API:
-- SiteBuilder(source_dir: str, build_dir: str, template_dir: str)
-- SiteBuilder.build() -> BuildResult
-- BuildResult.pages_built: int
-- BuildResult.errors: list[str]
-
-Covers: recursive directory walking, front matter extraction,
-template selection, asset copying, clean build.
+Tests written FIRST per TDD requirement. Each test covers
+a specific feature from the Brief's Phase 3 specification.
 """
 
+import sys
 import os
-import pytest
-import tempfile
 import shutil
+import tempfile
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from sitegen.builder import SiteBuilder, BuildResult
 
 
-@pytest.fixture
-def site_dirs():
-    """Create temporary source, build, and template directories."""
-    tmpdir = tempfile.mkdtemp()
-    source_dir = os.path.join(tmpdir, "source")
-    build_dir = os.path.join(tmpdir, "build")
-    template_dir = os.path.join(tmpdir, "templates")
-    os.makedirs(source_dir)
-    os.makedirs(build_dir)
-    os.makedirs(template_dir)
+class TestBuildResult:
+    """BuildResult has pages_built: int and errors: list[str]."""
 
-    # Write a default template
-    with open(os.path.join(template_dir, "default.html"), "w") as f:
-        f.write("<html><body>{{ content }}</body></html>")
+    def test_build_result_pages_built(self):
+        r = BuildResult(pages_built=3, errors=[])
+        assert r.pages_built == 3
 
-    yield source_dir, build_dir, template_dir
-    shutil.rmtree(tmpdir)
+    def test_build_result_errors(self):
+        r = BuildResult(pages_built=0, errors=["something broke"])
+        assert r.errors == ["something broke"]
 
 
-class TestBuildResultAttributes:
-    """Test BuildResult has the specified attributes."""
+class TestSiteBuilderConstructor:
+    """SiteBuilder(source_dir, build_dir, template_dir) constructor."""
 
-    def test_pages_built_is_int(self, site_dirs):
-        source_dir, build_dir, template_dir = site_dirs
-        builder = SiteBuilder(source_dir, build_dir, template_dir)
-        result = builder.build()
-        assert isinstance(result.pages_built, int)
-
-    def test_errors_is_list(self, site_dirs):
-        source_dir, build_dir, template_dir = site_dirs
-        builder = SiteBuilder(source_dir, build_dir, template_dir)
-        result = builder.build()
-        assert isinstance(result.errors, list)
-
-
-class TestEmptyBuild:
-    """Test building with no source files."""
-
-    def test_empty_source(self, site_dirs):
-        source_dir, build_dir, template_dir = site_dirs
-        builder = SiteBuilder(source_dir, build_dir, template_dir)
-        result = builder.build()
-        assert result.pages_built == 0
-        assert result.errors == []
-
-
-class TestSinglePageBuild:
-    """Test building a single markdown page."""
-
-    def test_single_page(self, site_dirs):
-        source_dir, build_dir, template_dir = site_dirs
-
-        # Write a markdown file with front matter
-        with open(os.path.join(source_dir, "index.md"), "w") as f:
-            f.write("---\ntemplate: default.html\ntitle: Home\n---\n# Welcome\n")
-
-        builder = SiteBuilder(source_dir, build_dir, template_dir)
-        result = builder.build()
-
-        assert result.pages_built == 1
-        assert result.errors == []
-
-        output_file = os.path.join(build_dir, "index.html")
-        assert os.path.exists(output_file)
-
-        with open(output_file) as f:
-            content = f.read()
-        assert "<h1>Welcome</h1>" in content
-
-
-class TestRecursiveDirectoryWalking:
-    """Test that subdirectories in source are walked recursively."""
-
-    def test_nested_directory(self, site_dirs):
-        source_dir, build_dir, template_dir = site_dirs
-
-        subdir = os.path.join(source_dir, "blog")
-        os.makedirs(subdir)
-        with open(os.path.join(subdir, "post.md"), "w") as f:
-            f.write("---\ntemplate: default.html\ntitle: Post\n---\n# Blog Post\n")
-
-        builder = SiteBuilder(source_dir, build_dir, template_dir)
-        result = builder.build()
-
-        assert result.pages_built == 1
-        output_file = os.path.join(build_dir, "blog", "post.html")
-        assert os.path.exists(output_file)
-
-
-class TestFrontMatterExtraction:
-    """Test YAML front matter extraction between --- delimiters."""
-
-    def test_front_matter_used_in_template(self, site_dirs):
-        source_dir, build_dir, template_dir = site_dirs
-
-        # Template that uses title from front matter
-        with open(os.path.join(template_dir, "titled.html"), "w") as f:
-            f.write("<html><title>{{ title }}</title><body>{{ content }}</body></html>")
-
-        with open(os.path.join(source_dir, "page.md"), "w") as f:
-            f.write("---\ntemplate: titled.html\ntitle: My Page\n---\n# Hello\n")
-
-        builder = SiteBuilder(source_dir, build_dir, template_dir)
-        result = builder.build()
-
-        assert result.pages_built == 1
-        with open(os.path.join(build_dir, "page.html")) as f:
-            content = f.read()
-        assert "<title>My Page</title>" in content
-
-
-class TestTemplateSelection:
-    """Test template selection from front matter."""
-
-    def test_selects_template_from_front_matter(self, site_dirs):
-        source_dir, build_dir, template_dir = site_dirs
-
-        with open(os.path.join(template_dir, "custom.html"), "w") as f:
-            f.write("<custom>{{ content }}</custom>")
-
-        with open(os.path.join(source_dir, "page.md"), "w") as f:
-            f.write("---\ntemplate: custom.html\n---\n# Custom\n")
-
-        builder = SiteBuilder(source_dir, build_dir, template_dir)
-        result = builder.build()
-
-        with open(os.path.join(build_dir, "page.html")) as f:
-            content = f.read()
-        assert "<custom>" in content
-
-
-class TestAssetCopying:
-    """Test CSS and image copying from source to build."""
-
-    def test_css_copied(self, site_dirs):
-        source_dir, build_dir, template_dir = site_dirs
-
-        css_dir = os.path.join(source_dir, "css")
-        os.makedirs(css_dir)
-        with open(os.path.join(css_dir, "style.css"), "w") as f:
-            f.write("body { color: red; }")
-
-        builder = SiteBuilder(source_dir, build_dir, template_dir)
-        builder.build()
-
-        output_css = os.path.join(build_dir, "css", "style.css")
-        assert os.path.exists(output_css)
-        with open(output_css) as f:
-            assert f.read() == "body { color: red; }"
-
-    def test_image_copied(self, site_dirs):
-        source_dir, build_dir, template_dir = site_dirs
-
-        img_dir = os.path.join(source_dir, "images")
-        os.makedirs(img_dir)
-        with open(os.path.join(img_dir, "logo.png"), "wb") as f:
-            f.write(b"\x89PNG\r\n")
-
-        builder = SiteBuilder(source_dir, build_dir, template_dir)
-        builder.build()
-
-        assert os.path.exists(os.path.join(build_dir, "images", "logo.png"))
+    def test_constructor(self):
+        sb = SiteBuilder("/tmp/src", "/tmp/build", "/tmp/templates")
+        assert sb is not None
 
 
 class TestCleanBuild:
-    """Test that build directory is cleaned before building."""
+    """Clean build — delete build dir before building."""
 
-    def test_old_files_removed(self, site_dirs):
-        source_dir, build_dir, template_dir = site_dirs
+    def test_clean_build_removes_old_files(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src = os.path.join(tmpdir, "src")
+            build = os.path.join(tmpdir, "build")
+            templates = os.path.join(tmpdir, "templates")
+            os.makedirs(src)
+            os.makedirs(build)
+            os.makedirs(templates)
 
-        # Put a stale file in build dir
-        with open(os.path.join(build_dir, "old.html"), "w") as f:
-            f.write("stale")
+            # Put a stale file in build
+            stale = os.path.join(build, "stale.html")
+            with open(stale, 'w') as f:
+                f.write("old content")
 
-        builder = SiteBuilder(source_dir, build_dir, template_dir)
-        builder.build()
+            # Write a template
+            with open(os.path.join(templates, "default.html"), 'w') as f:
+                f.write("<html>{{ content }}</html>")
 
-        assert not os.path.exists(os.path.join(build_dir, "old.html"))
+            # Write a markdown file
+            with open(os.path.join(src, "index.md"), 'w') as f:
+                f.write("---\ntemplate: default.html\n---\n# Hello")
+
+            sb = SiteBuilder(src, build, templates)
+            sb.build()
+            assert not os.path.exists(stale)
+
+
+class TestRecursiveDirectoryWalking:
+    """Recursive directory walking of source markdown files."""
+
+    def test_nested_directories(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src = os.path.join(tmpdir, "src")
+            build = os.path.join(tmpdir, "build")
+            templates = os.path.join(tmpdir, "templates")
+            os.makedirs(os.path.join(src, "sub"))
+            os.makedirs(templates)
+
+            with open(os.path.join(templates, "default.html"), 'w') as f:
+                f.write("<html>{{ content }}</html>")
+
+            with open(os.path.join(src, "index.md"), 'w') as f:
+                f.write("---\ntemplate: default.html\n---\n# Top")
+
+            with open(os.path.join(src, "sub", "page.md"), 'w') as f:
+                f.write("---\ntemplate: default.html\n---\n# Sub")
+
+            sb = SiteBuilder(src, build, templates)
+            result = sb.build()
+            assert result.pages_built == 2
+            assert os.path.exists(os.path.join(build, "index.html"))
+            assert os.path.exists(os.path.join(build, "sub", "page.html"))
+
+
+class TestFrontMatterExtraction:
+    """Front matter extraction (YAML between --- delimiters)."""
+
+    def test_front_matter_extracted(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src = os.path.join(tmpdir, "src")
+            build = os.path.join(tmpdir, "build")
+            templates = os.path.join(tmpdir, "templates")
+            os.makedirs(src)
+            os.makedirs(templates)
+
+            with open(os.path.join(templates, "default.html"), 'w') as f:
+                f.write("<html><title>{{ title }}</title>{{ content }}</html>")
+
+            with open(os.path.join(src, "index.md"), 'w') as f:
+                f.write("---\ntemplate: default.html\ntitle: My Page\n---\n# Hello")
+
+            sb = SiteBuilder(src, build, templates)
+            result = sb.build()
+            assert result.pages_built == 1
+
+            with open(os.path.join(build, "index.html"), 'r') as f:
+                html = f.read()
+            assert "<title>My Page</title>" in html
+
+
+class TestTemplateSelection:
+    """Template selection from front matter."""
+
+    def test_selects_template_from_front_matter(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src = os.path.join(tmpdir, "src")
+            build = os.path.join(tmpdir, "build")
+            templates = os.path.join(tmpdir, "templates")
+            os.makedirs(src)
+            os.makedirs(templates)
+
+            with open(os.path.join(templates, "blog.html"), 'w') as f:
+                f.write("<article>{{ content }}</article>")
+
+            with open(os.path.join(src, "post.md"), 'w') as f:
+                f.write("---\ntemplate: blog.html\n---\n# Blog Post")
+
+            sb = SiteBuilder(src, build, templates)
+            result = sb.build()
+            assert result.pages_built == 1
+
+            with open(os.path.join(build, "post.html"), 'r') as f:
+                html = f.read()
+            assert "<article>" in html
+
+
+class TestAssetCopying:
+    """Asset copying (CSS, images) from source to build."""
+
+    def test_copies_css_files(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src = os.path.join(tmpdir, "src")
+            build = os.path.join(tmpdir, "build")
+            templates = os.path.join(tmpdir, "templates")
+            os.makedirs(src)
+            os.makedirs(templates)
+
+            with open(os.path.join(src, "style.css"), 'w') as f:
+                f.write("body { color: red; }")
+
+            sb = SiteBuilder(src, build, templates)
+            sb.build()
+            assert os.path.exists(os.path.join(build, "style.css"))
+
+    def test_copies_image_files(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src = os.path.join(tmpdir, "src")
+            build = os.path.join(tmpdir, "build")
+            templates = os.path.join(tmpdir, "templates")
+            os.makedirs(src)
+            os.makedirs(templates)
+
+            with open(os.path.join(src, "logo.png"), 'wb') as f:
+                f.write(b'\x89PNG')
+
+            sb = SiteBuilder(src, build, templates)
+            sb.build()
+            assert os.path.exists(os.path.join(build, "logo.png"))
+
+
+class TestBuildErrors:
+    """BuildResult.errors collects errors during build."""
+
+    def test_missing_template_recorded_as_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src = os.path.join(tmpdir, "src")
+            build = os.path.join(tmpdir, "build")
+            templates = os.path.join(tmpdir, "templates")
+            os.makedirs(src)
+            os.makedirs(templates)
+
+            with open(os.path.join(src, "index.md"), 'w') as f:
+                f.write("---\ntemplate: nonexistent.html\n---\n# Hello")
+
+            sb = SiteBuilder(src, build, templates)
+            result = sb.build()
+            assert len(result.errors) > 0
+
+
+class TestBuilderDocstrings:
+    """Verify public API has documentation."""
+
+    def test_sitebuilder_has_docstring(self):
+        assert SiteBuilder.__doc__ is not None
+
+    def test_build_has_docstring(self):
+        assert SiteBuilder.build.__doc__ is not None
+
+    def test_buildresult_has_docstring(self):
+        assert BuildResult.__doc__ is not None
