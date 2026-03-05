@@ -16,56 +16,49 @@ in the right place.
 
 ---
 
-## Step 2 — Create the .env file
+## Step 2 — Create the .env file and add your API key
 
-Run this command in your terminal:
+Replace `sk-ant-your-key-here` with your real key
+(see "Where to get an API key" below).
 
-```bash
-touch .env
+**Windows (PowerShell):**
+
+```powershell
+Set-Content .env "ANTHROPIC_API_KEY=sk-ant-your-key-here"
 ```
 
-This creates an empty file called `.env` in the repo root.
-You will not see this file in git — it is excluded by
-`.gitignore` to prevent secrets from being committed.
-
----
-
-## Step 3 — Add your API key
-
-Open the `.env` file in any text editor and add the
-following line, replacing the placeholder with your
-actual Anthropic API key:
-
-```
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-```
-
-Save the file.
-
-**Alternative — do it from the terminal in one command:**
+**Mac / Linux:**
 
 ```bash
 echo 'ANTHROPIC_API_KEY=sk-ant-your-key-here' > .env
 ```
 
-Replace `sk-ant-your-key-here` with your real key.
+This creates a file called `.env` in the repo root.
+You will not see this file in git — it is excluded by
+`.gitignore` to prevent secrets from being committed.
 
 ---
 
-## Step 4 — Verify the file exists
+## Step 3 — Verify the file exists
 
-Run:
+**Windows (PowerShell):**
+
+```powershell
+Get-Content .env
+```
+
+**Mac / Linux:**
 
 ```bash
 cat .env
 ```
 
 You should see your API key line printed back to you.
-If you see nothing, the file is empty — go back to Step 3.
+If you see nothing, the file is empty — go back to Step 2.
 
 ---
 
-## Step 5 — Verify git is ignoring it
+## Step 4 — Verify git is ignoring it
 
 Run:
 
@@ -108,8 +101,13 @@ status line configuration options.
 
 ## Troubleshooting
 
+**"touch is not recognized" (Windows):**
+Use `Set-Content` or `New-Item` instead of `touch`.
+See the Windows commands in Step 2.
+
 **"Command not found" when running scripts:**
 Make sure Python 3 is installed: `python3 --version`
+On Windows, try `python --version` instead.
 
 **API key not being picked up:**
 Confirm there are no extra spaces around the `=` sign
