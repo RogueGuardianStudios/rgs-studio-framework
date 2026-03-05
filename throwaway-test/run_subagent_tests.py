@@ -10,9 +10,11 @@ Each subagent receives a test file, runs pytest, and reports results.
 
 import os
 import sys
-import json
 import subprocess
 import anthropic
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
 
 # Model tier mapping per orchestrator.md (lines 200-219)
 MODEL_TIERS = {
