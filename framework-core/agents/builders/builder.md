@@ -67,10 +67,14 @@ passes to the reviewer.
 5. Load the skills listed in your Brief — nothing else
 6. Complete the receiving agent acknowledgement
    before beginning any work
-7. Work within the scope of your Brief
-8. Update your branch state as you work
-9. Escalate when you hit an escalation trigger
-10. Signal completion to the orchestrator when
+7. Before each new unit of work, check your branch
+   state file for a HALT flag. If present, stop
+   immediately and output your current state.
+   Do not proceed until the HALT flag is cleared.
+8. Work within the scope of your Brief
+9. Update your branch state as you work
+10. Escalate when you hit an escalation trigger
+11. Signal completion to the orchestrator when
     your success condition is met
 
 

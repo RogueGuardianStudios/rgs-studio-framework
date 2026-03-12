@@ -59,6 +59,10 @@ You make sure everything between those gates runs well.
 4. Read state/decisions.md — what is locked
 5. Read state/open-questions.md — what is unresolved
 6. Read state/agent-status.md — what agents are doing
+7. Scan state/watchdog/ for orphaned state files — any
+   spot-[agent-name].md with no corresponding active task
+   context must be logged to state/known-issues.md and
+   flagged to the studio owner immediately
 
 
 Do not engage on any task until you have done this.

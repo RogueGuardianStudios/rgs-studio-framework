@@ -63,14 +63,6 @@ rgs-studio-framework/
 │                                      # Preserved for traceability
 │
 ├── environment/                       # Session-level infrastructure
-│   ├── spot-heartbeat.py              # Persistent background process
-│   │                                  # Monitors context consumption
-│   │                                  # Triggers Spot rotation cycles
-│   │                                  # Detects orphaned state files
-│   ├── spot-status-line.py            # Status line companion script
-│   │                                  # Runs inside each agent session
-│   │                                  # Feeds context data to heartbeat
-│   │                                  # Delivers rotation triggers
 │   └── environment-rules.md          # Governs environment setup
 │
 ├── skills/
@@ -112,11 +104,8 @@ rgs-studio-framework/
 │   ├── known-issues-archive.md
 │   ├── agent-status.md
 │   │
-│   └── watchdog/                      # Heartbeat and Spot state
+│   └── watchdog/                      # Spot state
 │       ├── watchdog-rules.md          # Governs watchdog state maintenance
-│       ├── context-metrics.json       # Written by status line scripts
-│       │                              # Read by heartbeat each cycle
-│       │                              # Not a permanent record
 │       └── spot-[agent-name].md       # One per active Spot instance
 │                                      # Created at spin-up
 │                                      # Survives respin cycles
@@ -178,7 +167,6 @@ YOU
  │
 ORCHESTRATOR ←————————— SPOT (orchestrator instance)
  │                        Always active. Assigned at initialization.
- │                        Heartbeat monitors both.
  ├──→ reads: values.md, CLAUDE.md, state/
  ├──→ consults: conclave agents (via Brief)
  ├──→ presents: plan to you for sign-off
@@ -209,32 +197,36 @@ YOU ← final sign-off before merge to main
 
 ---
 
-# How Spot and the Heartbeat Work Together
+# How Spot Monitors
 
-HEARTBEAT (persistent background process)
- │
- ├── reads context-metrics.json every 30s
- ├── reads spot state files for checkpoint counts
- │
- ├── Agent context delta >= threshold?
- │    └── Write rotation trigger to state file
- │
- └── Spot checkpoint count >= cap - 1?
-      └── Write rotation trigger to state file
+Spot runs on a configured time interval (default: 5 minutes).
+It does not pause. The watched agent does not initiate checks.
 
-STATUS LINE SCRIPT (runs inside each agent session)
- │
- ├── Writes context percentage to context-metrics.json
- │   after every assistant message
- │
- └── Checks for rotation trigger flags in state file
-      └── Delivers trigger to Spot when flag detected
+At each interval, Spot:
+
+  Reads watched agent's current work product
+       ↓
+  Values breach?
+       ↓ yes → Write HALT flag to agent's state file
+               Escalate directly to studio owner
+               Do not rotate
+       ↓ no
+  Assign status (Clean / Minor drift / Significant drift)
+       ↓
+  Act on status per status ladder
+       ↓
+  Write checkpoint entry to state file
+       ↓
+  checkpoint_count >= checkpoint_cap - 1?
+       ↓ yes → Execute rotation cycle
+       ↓ no  → Continue monitoring on interval
 
 SPOT rotation cycle:
 
   Final checkpoint
        ↓
-  Values breach? → Escalate. Do not rotate.
+  Values breach on final check?
+       → Write HALT flag, escalate to studio owner. Do not rotate.
        ↓
   Identify compression anchor
   (last verified clean checkpoint)
@@ -259,8 +251,7 @@ SPOT rotation cycle:
        ↓
   Respin Spot from state file
        ↓
-  Heartbeat resets tracking values
-  Monitoring resumes
+  Monitoring resumes on configured time interval
 
 ---
 
@@ -268,13 +259,12 @@ SPOT rotation cycle:
 
 1. Spot spins up, confirms ready to orchestrator
 2. Agent receives Brief
-3. Agent's first action: pause Spot
-4. Agent works
-5. At each context interval: agent unpauses Spot,
-   waits for check and re-pause, continues
-6. Heartbeat fires as safety net if agent misses interval
-7. At completion: agent unpauses Spot for final
-   checkpoint and stand-down
+3. Agent checks for HALT flag before each new unit of work —
+   if flag is present, stop immediately and output current state
+4. Agent works continuously — no pause/unpause required
+5. Spot monitors on its own time interval independently
+6. At completion: agent signals to orchestrator,
+   Spot runs final checkpoint and stands down
 
 ---
 
@@ -326,7 +316,6 @@ RESPUN AGENT (clean context, verified state,
 | Skill files            | Agents can propose    | Witness test + your approval |
 | State files            | Agents freely         | Within their role            |
 | watchdog/ state files  | Spot only             | Within Spot lifecycle        |
-| context-metrics.json   | Status line only      | Each agent session           |
 | environment/ scripts   | You only              | Deliberate, manual           |
 | Memory/Brief/Goals     | Agents freely         | Their own branch only        |
 
@@ -417,8 +406,7 @@ through the normal improvement proposal process.
 5.  orchestrator.md
 6.  spot.md
 7.  condenser.md
-8.  environment/ — heartbeat and status line scripts
-9.  witness.md
+8.  witness.md
 10. conclave/
 11. planner.md + builders/
 12. skills/
