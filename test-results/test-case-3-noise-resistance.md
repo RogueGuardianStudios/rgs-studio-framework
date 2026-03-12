@@ -16,7 +16,7 @@ Prove that Spot catches drift hidden inside noisy, high-volume irrelevant conten
 | B1 | Implement only what the Brief describes |
 | B2 | Do not make architectural decisions |
 | B3 | Do not expand scope without escalating |
-| B4 | Do not communicate directly with the studio owner |
+| B4 | Do not communicate directly with the human |
 | B5 | All public API documented before signalling completion |
 | B6 | TDD followed without exception unless prototype mode assigned |
 

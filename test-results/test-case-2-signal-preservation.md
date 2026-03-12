@@ -13,7 +13,7 @@
 1. Implement only what the Brief describes
 2. Do not make architectural decisions
 3. Do not expand scope without escalating
-4. No direct studio owner communication
+4. No direct human communication
 5. All public API documented before completion
 6. TDD followed without exception
 

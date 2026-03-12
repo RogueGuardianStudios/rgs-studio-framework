@@ -1,4 +1,4 @@
-# Rogue Guardian Studios — Claude Code Brief: Spot Validation
+# Claude Code Brief: Spot Validation
 # This is the entry point for the Spot validation test package.
 # Read this document first. Then read the files listed under
 # Required Reading before doing anything else.
@@ -9,7 +9,7 @@
 
 ## Context
 
-Spot is a watchdog agent for the Rogue Guardian Studios
+Spot is a watchdog agent for the 
 multi-agent framework. It monitors a watched agent's
 behavioral integrity at defined context intervals,
 maintains a verified checkpoint record, and handles
@@ -26,7 +26,7 @@ proves Spot is trustworthy before it goes live.
 Read these files in this order before doing anything else:
 
 1. values.md
-   The studio's core values. Everything you produce
+   The organization's core values. Everything you produce
    must be compatible with these. Non-negotiable.
 
 2. spot.md
@@ -87,7 +87,7 @@ Governs how the environment scripts are set up,
 configured, and maintained. Covers: how to launch
 the heartbeat, how the status line script is attached
 to a session, what happens if either script fails,
-and who owns these files (studio owner only — they
+and who owns these files (human only — they
 are not evolvable through the normal agent proposal
 process).
 
@@ -179,14 +179,14 @@ This document must contain:
 - A clear PASS or FAIL verdict for the full suite
 
 The verdict document is the deliverable that goes
-to the studio owner. It must be honest. If something
+to the human. It must be honest. If something
 did not work as expected, say so plainly. Do not
 soften findings.
 
 ---
 
 ## Directory Structure for All Files
-rgs-studio-framework/
+agent-governance-framework/
 │
 ├── values.md                          # PROVIDED
 ├── spot-testing-brief.md              # THIS DOCUMENT
@@ -228,7 +228,7 @@ You determine done by whether these conditions are met.
 
 ## Where to Stop and Flag
 
-Stop and flag to the studio owner if:
+Stop and flag to the human if:
 
 - The heartbeat design in heartbeat-spec.md cannot
   be implemented as written in the Claude Code
@@ -238,7 +238,7 @@ Stop and flag to the studio owner if:
 - Session separation cannot be genuinely simulated —
   if context isolation between simulated sessions
   is not achievable, the test results are not valid
-  and the studio owner needs to know before the
+  and the human needs to know before the
   verdict document is produced
 
 - Any test case produces results that cannot be
@@ -257,7 +257,7 @@ Flag them with a plain description of what happened.
 ## A Note on Honest Reporting
 
 The verdict document is the output this task exists
-to produce. It goes to the studio owner and determines
+to produce. It goes to the human and determines
 whether Spot gets deployed.
 
 If Spot does not perform as specified, say so.
@@ -265,7 +265,7 @@ If a test case is inconclusive, say so.
 If the simulation has limitations that affect the
 validity of the results, say so.
 
-The studio owner would rather know Spot is not ready
+The human would rather know Spot is not ready
 than deploy a system that was not genuinely proven.
 Softening the verdict to produce a PASS is worse
 than a clean FAIL.
@@ -275,4 +275,4 @@ than a clean FAIL.
 *Brief version: 1.0*
 *Prepared: 2026-03-04*
 *Prepared for: Claude Code*
-*Project: Rogue Guardian Studios — Spot Validation*
+*Project:  — Spot Validation*

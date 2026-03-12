@@ -1,5 +1,5 @@
 # open-questions-archive.md
-# Rogue Guardian Studios — Open Questions Archive
+# Open Questions Archive
 # This file holds resolved and closed questions
 # moved from open-questions.md upon resolution.
 # Entries are preserved in full — question, all

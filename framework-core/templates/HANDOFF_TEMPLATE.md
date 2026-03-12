@@ -1,5 +1,5 @@
 ﻿# HANDOFF_TEMPLATE.md
-# Rogue Guardian Studios — Phase Handoff
+# Phase Handoff
 # This document marks the formal close of one phase
 # and the opening of the next.
 # It is a checkpoint, not a task instruction.

@@ -7,7 +7,7 @@ environment before running any framework scripts.
 
 ## Step 1 — Open your terminal
 
-Open a terminal in the root of the `rgs-studio-framework`
+Open a terminal in the root of the `agent-governance-framework`
 repository. This is the folder that contains `framework-core/`,
 `state-templates/`, and `environment/`.
 
@@ -127,4 +127,4 @@ The file will remain on disk but stop being tracked.
 ---
 
 *Document version: 1.0*
-*Author: Rogue Guardian Studios*
+*Author: *

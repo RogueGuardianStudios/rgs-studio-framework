@@ -1,5 +1,5 @@
 # known-issues-archive.md
-# Rogue Guardian Studios — Known Issues Archive
+# Known Issues Archive
 # This file holds resolved and closed issues
 # moved from known-issues.md upon resolution.
 # Entries are preserved in full — issue, all notes,

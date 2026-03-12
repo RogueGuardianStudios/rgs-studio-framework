@@ -1,9 +1,9 @@
 # agent-status-rules.md
-# Rogue Guardian Studios — Agent Status Rules
+# Agent Status Rules
 # This document governs how agent-status.md is maintained.
 # All agents that read or write agent-status.md must
 # read this document first.
-# This document is immutable. Only the studio owner
+# This document is immutable. Only the human
 # may modify it.
 
 ---
@@ -12,7 +12,7 @@
 
 - Orchestrator — every session, before any work
 - Any agent that needs to know what others are doing
-- Studio owner — at any time for pipeline visibility
+- Human — at any time for pipeline visibility
 
 ---
 
@@ -23,7 +23,7 @@ Agents may request their own status be updated
 via escalation — they do not write directly.
 The orchestrator makes all updates.
 
-The studio owner may write directly at any time.
+The human may write directly at any time.
 
 ---
 
@@ -90,7 +90,7 @@ Current state only. Always accurate. Never stale.
 If the orchestrator identifies an agent that
 has been blocked for more than one session
 without progress on the known issue, escalate
-to the studio owner.
+to the human.
 
 A persistently blocked agent is a pipeline
 problem, not just an individual agent problem.
@@ -99,6 +99,6 @@ problem, not just an individual agent problem.
 
 *Rules version: 1.0*
 *Created: 2026-03-02*
-*Author: Studio Owner — Rogue Guardian Studios*
-*Next review: At studio owner's discretion*
+*Author: [Your Name]*
+*Next review: At human's discretion*
 

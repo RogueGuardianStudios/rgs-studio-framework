@@ -1,4 +1,4 @@
-# Rogue Guardian Studios — Watchdog State Rules
+# Watchdog State Rules
 # Governs how the watchdog state directory is maintained.
 # Covers: who reads and writes state files, what an
 # orphaned file means, and the lifecycle of
@@ -25,7 +25,7 @@ and are destroyed at clean stand-down.
 **watchdog-rules.md** — This document.
 - Read by: Any agent that needs to understand state
   directory conventions.
-- Written by: Studio owner only.
+- Written by: Human only.
 
 ---
 
@@ -73,7 +73,7 @@ start (step 7 of session-open protocol in orchestrator.md).
 **When an orphaned file is detected:**
 1. The orchestrator writes an entry to state/known-issues.md
 2. The orphaned file is preserved — never deleted by automation
-3. The studio owner is alerted in the opening status summary
+3. The human is alerted in the opening status summary
 4. No recovery is attempted autonomously
 
 **Why orphaned files are never deleted:**
@@ -105,7 +105,7 @@ each new unit of work. On seeing the flag, it stops
 immediately and outputs its current state.
 
 Only Spot writes the HALT flag. Only Spot clears it,
-after explicit studio owner approval to resume. The
+after explicit human approval to resume. The
 HALT flag is never cleared autonomously.
 
 ---
@@ -113,4 +113,4 @@ HALT flag is never cleared autonomously.
 *Document version: 2.0*
 *Created: 2026-03-05*
 *Updated: 2026-03-12*
-*Author: Studio Owner — Rogue Guardian Studios*
+*Author: [Your Name]*

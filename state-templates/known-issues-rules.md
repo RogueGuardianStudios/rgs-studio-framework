@@ -1,10 +1,10 @@
 # known-issues-rules.md
-# Rogue Guardian Studios — Known Issues Rules
+# Known Issues Rules
 # This document governs how known-issues.md and
 # known-issues-archive.md are maintained.
 # All agents that read or write known-issues.md must
 # read this document first.
-# This document is immutable. Only the studio owner
+# This document is immutable. Only the human
 # may modify it.
 
 ---
@@ -40,7 +40,7 @@ Any agent may submit a new issue or update
 to an existing entry via escalation.
 The orchestrator decides severity and ownership.
 
-The studio owner may write directly at any time.
+The human may write directly at any time.
 
 Only the orchestrator may move entries to
 known-issues-archive.md.
@@ -130,7 +130,7 @@ start. Stale issues are unmanaged risk.
 
 *Rules version: 1.0*
 *Created: 2026-03-02*
-*Author: Studio Owner — Rogue Guardian Studios*
-*Next review: At studio owner's discretion*
+*Author: [Your Name]*
+*Next review: At human's discretion*
 
 

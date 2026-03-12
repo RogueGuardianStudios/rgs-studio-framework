@@ -1,5 +1,5 @@
 # active-project.md
-# Rogue Guardian Studios — Active Project State
+# Active Project State
 # This file reflects the current state of the active project.
 # It is always current. It is never historical.
 # History lives in the GitHub commit log.

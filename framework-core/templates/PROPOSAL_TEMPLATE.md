@@ -1,5 +1,5 @@
 # PROPOSAL_TEMPLATE.md
-# Rogue Guardian Studios — Improvement Proposal
+# Improvement Proposal
 # This document is the required format for all agent
 # improvement proposals. All fields are mandatory.
 # A proposal that cannot answer these questions fully
@@ -142,7 +142,7 @@ Date: [YYYY-MM-DD]
 
 ---
 
-## Studio Owner Review
+## Human Review
 
 - [ ] Problem statement is valid and evidenced
 - [ ] Proposed change is specific enough to test
@@ -153,12 +153,12 @@ Date: [YYYY-MM-DD]
 Decision: [Approved / Rejected / Needs revision]
 Reason if rejected or revised: [Notes]
 
-Reviewed by: Studio Owner
+Reviewed by: Human
 Date: [YYYY-MM-DD]
 
 ---
 
 *Proposal submitted under values.md v1.0*
-*No witness test runs without studio owner approval.*
+*No witness test runs without human approval.*
 *Evaluation rubric applies to all witness test outputs.*
 

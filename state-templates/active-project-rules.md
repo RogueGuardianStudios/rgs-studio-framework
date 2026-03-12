@@ -1,9 +1,9 @@
 # active-project-rules.md
-# Rogue Guardian Studios — Active Project State Rules
+# Active Project State Rules
 # This document governs how active-project.md is maintained.
 # All agents that read or write active-project.md must
 # read this document first.
-# This document is immutable. Only the studio owner
+# This document is immutable. Only the human
 # may modify it.
 
 ---
@@ -33,7 +33,7 @@ The orchestrator updates active-project.md:
 - When a phase changes
 - When a blocker is identified or resolved
 - When priorities shift
-- When the studio owner changes direction
+- When the human changes direction
 - At the close of every significant session
 
 If a session ends without an update and nothing
@@ -96,6 +96,6 @@ before proceeding. Do not work from stale state.
 
 *Rules version: 1.0*
 *Created: 2026-03-02*
-*Author: Studio Owner — Rogue Guardian Studios*
-*Next review: At studio owner's discretion*
+*Author: [Your Name]*
+*Next review: At human's discretion*
 

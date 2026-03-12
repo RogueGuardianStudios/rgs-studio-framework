@@ -1,10 +1,10 @@
 # brief-rules.md
-# Rogue Guardian Studios — Brief Rules
+# Brief Rules
 # This document governs how BRIEF_TEMPLATE.md is
 # used and maintained.
 # All agents that produce or receive a Brief must
 # read this document first.
-# This document is immutable. Only the studio owner
+# This document is immutable. Only the human
 # may modify it.
 
 ---
@@ -102,7 +102,7 @@ the update is working from stale instructions.
 
 The transmitting agent specifies which skills
 the receiving agent should load. This includes
-both standard studio skills and custom skills
+both standard framework skills and custom skills
 built for specific projects.
 
 The receiving agent loads only the skills
@@ -127,6 +127,6 @@ justification. This violates Value 3.
 
 *Rules version: 1.0*
 *Created: 2026-03-02*
-*Author: Studio Owner — Rogue Guardian Studios*
-*Next review: At studio owner's discretion*
+*Author: [Your Name]*
+*Next review: At human's discretion*
 
