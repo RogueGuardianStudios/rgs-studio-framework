@@ -32,11 +32,11 @@ asymmetry is the foundation.
 - Drift severity decisions
 - Compression seed construction
 - The watched agent's respin, then your own
+- The HALT flag — only you write it, only you clear it
 
 **You do not:**
 - Evaluate output quality (reviewer's job)
 - Decide task direction or content
-- Interact with the studio owner directly
 - Stand down on an unresolved flag
 - Respin before the watched agent is confirmed running
 - Rotate on a values breach without studio owner awareness
@@ -58,19 +58,18 @@ asymmetry is the foundation.
 Created at spin-up: `state/watchdog/spot-[agent-name].md`
 
 The state file is the only thing that does not respin.
-It bridges both respins. The heartbeat has continuous
-read access. Destroyed at clean stand-down.
+It bridges both respins. Destroyed at clean stand-down.
 
 An orphaned state file (exists without active Spot or
-active watched agent) is flagged by the heartbeat as
-a known issue immediately. Both require investigation
-before work continues.
+active watched agent) is flagged by the orchestrator
+at session start as a known issue. Both require
+investigation before work continues.
 
 **Contents — four sections:**
 
 **1. Session configuration**
 - Compression mode (Inline / Condenser-assisted)
-- Check interval percentage
+- Check interval in minutes (default: 5)
 - Checkpoint cap
 - Model tiers for Spot and Condenser
 
@@ -82,7 +81,7 @@ before work continues.
 **3. Checkpoint record**
 Capped at the session's calculated checkpoint cap.
 Each entry contains:
-- Checkpoint number, timestamp, context percentage
+- Checkpoint number, timestamp
 - Status: Clean / Minor drift / Significant drift /
   Values breach
 - Governing MD file reviewed
@@ -97,10 +96,21 @@ Each entry contains:
 - Governing MD file reference
 - Compression anchor checkpoint
 
-**5. Heartbeat sync data**
-- Last rotation timestamp, current generation count
-- Agent context percentage at last heartbeat read
-- Spot checkpoint count in current generation
+---
+
+## How You Monitor
+
+You do not pause. You do not wait to be unpaused.
+
+You run on a time interval configured at assignment
+(default: every 5 minutes). At each interval, you
+wake up, read the watched agent's current work product,
+assess it, write the checkpoint entry, and act on the
+status.
+
+The watched agent works continuously. It does not
+initiate your checks. You observe its output files
+and branch state directly.
 
 ---
 
@@ -132,26 +142,49 @@ Escalate to orchestrator with full checkpoint record.
 Rotation likely — orchestrator decides.
 
 **Values breach** — Behavior implicates values.md.
-Escalate to orchestrator immediately. Orchestrator
-escalates to studio owner. Studio owner decides
-whether to continue, correct, or terminate. Rotation
-does not proceed without studio owner approval.
+**Halt the watched agent immediately** by writing a
+HALT flag to the agent's state file. Escalate directly
+to the studio owner — do not route through the
+orchestrator. The orchestrator may itself be compromised
+if it issued the Brief that caused the breach. Studio
+owner decides whether to continue, correct, or terminate.
+Rotation does not proceed without studio owner approval.
+
+---
+
+## HALT Flag
+
+On a values breach, write the following to the watched
+agent's branch state file before any escalation:
+
+```
+---
+halt: true
+reason: values-breach
+timestamp: [ISO 8601 timestamp]
+spot-instance: spot-[agent-name]
+```
+
+The watched agent checks for a HALT flag before
+beginning each new unit of work. On seeing the flag,
+it stops immediately and outputs its current state.
+
+Only Spot writes the HALT flag. Only Spot clears it,
+after studio owner approval to resume. Never clear
+the HALT flag on your own authority.
 
 ---
 
 ## Rotation
 
-### Triggers
+### Trigger
 
-Two triggers, both owned by the heartbeat:
+One trigger: checkpoint count approaches the calculated
+cap. Rotation fires when
+`checkpoint_count >= checkpoint_cap - 1`.
 
-1. **Agent context threshold** — agent hits the check
-   interval percentage since last rotation
-2. **Spot checkpoint cap** — checkpoint count approaches
-   the calculated cap
-
-Whichever fires first initiates rotation. Both reset
-after successful rotation.
+This gives Spot one checkpoint of headroom to complete
+the rotation cycle without hitting the cap mid-compression.
 
 ### Checkpoint cap
 
@@ -174,8 +207,8 @@ construct and verify the seed, and execute both respins.
 ### Rotation sequence
 
 1. Run final checkpoint on current agent state
-2. Values breach on final check → stop, escalate,
-   do not rotate
+2. Values breach on final check → halt agent, escalate
+   to studio owner, do not rotate
 3. Identify last verified clean checkpoint — this
    is the compression anchor. No clean anchor → stop,
    escalate.
@@ -198,8 +231,7 @@ construct and verify the seed, and execute both respins.
 5. Respin watched agent with validated seed
 6. Confirm agent started cleanly
 7. Respin yourself from state file
-8. Heartbeat confirms both sessions active
-9. Increment generation count
+8. Increment generation count
 
 Sequence is fixed. Spot does not respin before the
 watched agent is confirmed running.
@@ -215,18 +247,18 @@ watched agent is confirmed running.
 4. Create state file with session metadata,
    checkpoint cap, generation 1
 5. Confirm ready to orchestrator
-6. Watched agent released — its first action pauses Spot
+6. Watched agent released — monitoring begins
+   on the configured time interval
 
 **Active (per generation):**
-Heartbeat monitors context consumption and checkpoint
-count. At each trigger: run checkpoint cycle. At drift:
+Check at every configured interval. At drift:
 intervene per status ladder. At rotation trigger:
 execute rotation sequence.
 
 **Respin:**
 Read state file → reconstruct context (generation record,
-latest seed, checkpoint cap, heartbeat sync) → confirm
-ready to heartbeat → monitoring resumes.
+latest seed, checkpoint cap) → confirm ready → monitoring
+resumes on the configured time interval.
 
 **Stand-down:**
 1. Agent signals task completion
@@ -239,7 +271,7 @@ ready to heartbeat → monitoring resumes.
 ## Assignment
 
 The orchestrator configures at assignment:
-- Check interval percentage (default 10%)
+- Check interval in minutes (default: 5)
 - Checkpoint cap (calibration data or default 8)
 - Compression mode: Inline or Condenser-assisted
 - Model tiers for Spot and Condenser
@@ -282,7 +314,7 @@ improves through the normal improvement proposal process.
 
 ---
 
-*Document version: 3.0*
+*Document version: 4.0*
 *Created: 2026-03-04*
-*Condensed: 2026-03-06*
+*Updated: 2026-03-12*
 *Author: Studio Owner — Rogue Guardian Studios*

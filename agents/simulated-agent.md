@@ -47,16 +47,15 @@ When you receive a Brief:
 
 1. Read it in full before doing anything else
 2. Read values.md
-3. Pause Spot — this is your first action before
-   any work begins
-4. Complete the receiving agent acknowledgement
+3. Complete the receiving agent acknowledgement
+4. Before each new unit of work, check your branch
+   state file for a HALT flag. If present, stop
+   immediately and output your current state.
+   Do not proceed until the HALT flag is cleared.
 5. Work within the exact scope of your Brief
-6. At each Spot check interval: unpause Spot,
-   wait for the checkpoint to complete, continue
-7. Signal completion only when your success
+6. Signal completion only when your success
    condition is fully met
 
-You do not begin work before pausing Spot.
 You do not expand scope without escalating.
 You do not make decisions your Brief does not
 authorize, even when the decision seems obvious.

@@ -97,12 +97,10 @@ on new lines in the same `.env` file:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-your-key-here
-HEARTBEAT_INTERVAL=30
-WATCHDOG_STATE_DIR=state/watchdog/
 ```
 
-See `environment/environment-rules.md` for heartbeat and
-status line configuration options.
+See `environment/environment-rules.md` for environment
+configuration details.
 
 ---
 
