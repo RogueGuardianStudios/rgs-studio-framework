@@ -40,7 +40,7 @@ None. All specified public APIs are implemented and documented. No scope was add
 ============================= test session starts ==============================
 platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3
 cachedir: .pytest_cache
-rootdir: /home/user/rgs-studio-framework
+rootdir: /home/user/agent-governance-framework
 collecting ... collected 65 items
 
 throwaway-test/tests/test_builder.py::TestBuildResult::test_build_result_has_pages_built PASSED [  1%]

@@ -1,7 +1,7 @@
 # known-issues.md
-# Rogue Guardian Studios — Known Issues
+# Known Issues
 # This file tracks all known problems affecting
-# the studio or active projects.
+# the organization or active projects.
 # It is always current. Issues are never left stale.
 # If an issue is resolved, it is archived.
 # If an issue is ignored, it compounds.

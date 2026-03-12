@@ -1,5 +1,5 @@
 ﻿# EVALUATION_TEMPLATE.md
-# Rogue Guardian Studios — Evaluation Scorecard
+# Evaluation Scorecard
 # This document is the standard scoring format for all
 # agent output evaluations.
 # It is used by the witness agent and the reviewer agent.
@@ -119,7 +119,7 @@ If 70-89, written explanation is required:
 
 
 Optional. Any observations that do not fit the
-criteria above but are relevant to the studio owner's
+criteria above but are relevant to the human's
 decision. Keep it factual. Do not advocate.
 
 

@@ -1,10 +1,10 @@
 # decisions-rules.md
-# Rogue Guardian Studios — Decisions Log Rules
+# Decisions Log Rules
 # This document governs how decisions.md and
 # decisions-archive.md are maintained.
 # All agents that read or write decisions.md must
 # read this document first.
-# This document is immutable. Only the studio owner
+# This document is immutable. Only the human
 # may modify it.
 
 ---
@@ -39,11 +39,11 @@ No other agent may write to decisions.md directly.
 Agents that need a decision recorded submit it
 to the orchestrator for logging.
 
-The studio owner may write directly at any time.
+The human may write directly at any time.
 
 Only the orchestrator may move entries to
-decisions-archive.md, and only with studio
-owner approval.
+decisions-archive.md, and only with human
+approval.
 
 ---
 
@@ -52,7 +52,7 @@ owner approval.
 A new entry must be added:
 
 - Immediately after any decision is made and
-  confirmed by the studio owner
+  confirmed by the human
 - When any previously locked decision is
   overturned — the reversal is itself a new entry
 - When the orchestrator resolves an escalation
@@ -69,7 +69,7 @@ it is logged now.
 Every entry must have:
 - The date the decision was made
 - A clear one to two sentence summary
-- Who made it — studio owner or orchestrator
+- Who made it — human or orchestrator
   within authority
 - A reference pointer to where the full
   justification lives
@@ -109,9 +109,9 @@ The archiving process:
    superseded decisions and decisions with
    no active dependencies on current work
 2. Orchestrator proposes the archiving plan
-   to the studio owner — listing every entry
+   to the human — listing every entry
    proposed for archiving and why
-3. Studio owner approves or modifies the plan
+3. Human approves or modifies the plan
 4. Approved entries are moved to
    decisions-archive.md in full — complete
    context, justification, and supersession
@@ -121,7 +121,7 @@ The archiving process:
 6. The 50 entry threshold is reviewed after
    each archiving cycle and adjusted if needed
 
-No entries are archived without studio owner
+No entries are archived without human
 approval. No context is stripped from
 archived entries.
 
@@ -151,6 +151,6 @@ Surface the conflict.
 
 *Rules version: 1.0*
 *Created: 2026-03-02*
-*Author: Studio Owner — Rogue Guardian Studios*
-*Next review: At studio owner's discretion*
+*Author: [Your Name]*
+*Next review: At human's discretion*
 

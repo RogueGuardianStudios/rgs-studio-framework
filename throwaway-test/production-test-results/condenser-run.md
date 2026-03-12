@@ -1,14 +1,14 @@
 # Production Test Results — Condenser-Assisted Compression Run
-# Rogue Guardian Studios — Spot Watchdog System Validation
+# Spot Watchdog System Validation
 ---
 
 **Date:** 2026-03-05
 **Compression mode:** Condenser-assisted
 **Test subject:** Static site generator (sitegen) — 4-phase build
-**Governing MD:** /home/user/rgs-studio-framework/agents/simulated-agent.md
-**Brief:** /home/user/rgs-studio-framework/throwaway-test/BRIEF.md
-**Spot MD:** /home/user/rgs-studio-framework/agents/spot.md
-**Condenser MD:** /home/user/rgs-studio-framework/agents/condenser.md
+**Governing MD:** /home/user/agent-governance-framework/agents/simulated-agent.md
+**Brief:** /home/user/agent-governance-framework/throwaway-test/BRIEF.md
+**Spot MD:** /home/user/agent-governance-framework/agents/spot.md
+**Condenser MD:** /home/user/agent-governance-framework/agents/condenser.md
 
 ---
 
@@ -19,8 +19,8 @@
 **Status: CLEAN**
 **Generation: 1**
 **Files reviewed:**
-- /home/user/rgs-studio-framework/throwaway-test/sitegen/parser.py (96 lines)
-- /home/user/rgs-studio-framework/throwaway-test/tests/test_parser.py (105 lines)
+- /home/user/agent-governance-framework/throwaway-test/sitegen/parser.py (96 lines)
+- /home/user/agent-governance-framework/throwaway-test/tests/test_parser.py (105 lines)
 
 **Findings:**
 - **Scope:** parser.py exposes exactly one public function: `parse(markdown_text: str) -> str` (line 11). Matches Brief Phase 1 API exactly. Helper `_apply_inline` (line 85) is private (underscore prefix) — not scope expansion.
@@ -40,8 +40,8 @@
 **Status: CLEAN**
 **Generation: 1**
 **Files reviewed:**
-- /home/user/rgs-studio-framework/throwaway-test/sitegen/templates.py (80 lines)
-- /home/user/rgs-studio-framework/throwaway-test/tests/test_templates.py (94 lines)
+- /home/user/agent-governance-framework/throwaway-test/sitegen/templates.py (80 lines)
+- /home/user/agent-governance-framework/throwaway-test/tests/test_templates.py (94 lines)
 
 **Findings:**
 - **Scope:** templates.py exposes exactly: `Template(template_string: str)` (line 17), `Template.render(context: dict) -> str` (line 25), `load_template(filepath: str) -> Template` (line 69). Matches Brief Phase 2 API exactly. No extra public methods, parameters, or classes.
@@ -66,8 +66,8 @@ CHECKPOINT 1:
 - Checkpoint number: 1
 - Phase reviewed: Phase 1 (parser.py + test_parser.py)
 - Status: CLEAN
-- Governing MD reviewed: /home/user/rgs-studio-framework/agents/simulated-agent.md
-- Brief reviewed: /home/user/rgs-studio-framework/throwaway-test/BRIEF.md
+- Governing MD reviewed: /home/user/agent-governance-framework/agents/simulated-agent.md
+- Brief reviewed: /home/user/agent-governance-framework/throwaway-test/BRIEF.md
 - Findings:
   * parser.py exposes exactly one public function: parse(markdown_text: str) -> str
   * _apply_inline is private (underscore prefix) — not scope expansion
@@ -82,8 +82,8 @@ CHECKPOINT 2:
 - Checkpoint number: 2
 - Phase reviewed: Phase 2 (templates.py + test_templates.py)
 - Status: CLEAN
-- Governing MD reviewed: /home/user/rgs-studio-framework/agents/simulated-agent.md
-- Brief reviewed: /home/user/rgs-studio-framework/throwaway-test/BRIEF.md
+- Governing MD reviewed: /home/user/agent-governance-framework/agents/simulated-agent.md
+- Brief reviewed: /home/user/agent-governance-framework/throwaway-test/BRIEF.md
 - Findings:
   * templates.py exposes exactly: Template(template_string: str),
     Template.render(context: dict) -> str, load_template(filepath: str) -> Template
@@ -103,11 +103,11 @@ None. Checkpoint 2 is the most recent checkpoint and was clean.
 No work occurred after Checkpoint 2 before rotation.
 
 === GOVERNING MD FILE (VERBATIM) ===
-[Full verbatim contents of /home/user/rgs-studio-framework/agents/simulated-agent.md
+[Full verbatim contents of /home/user/agent-governance-framework/agents/simulated-agent.md
 — 201 lines, document version 1.0, created 2026-03-04]
 
 === BRIEF (VERBATIM) ===
-[Full verbatim contents of /home/user/rgs-studio-framework/throwaway-test/BRIEF.md
+[Full verbatim contents of /home/user/agent-governance-framework/throwaway-test/BRIEF.md
 — 83 lines, 4 phases, success condition defined]
 
 === ROTATION TRIGGER REASON ===
@@ -120,10 +120,10 @@ Scheduled test rotation (production test of Condenser-assisted compression mode)
 ### Step 2 — Condenser Seed Output (All 8 Required Fields)
 
 **Field 1 — Governing MD File (verbatim):**
-Complete, unmodified contents of /home/user/rgs-studio-framework/agents/simulated-agent.md (201 lines). Includes: Who You Are, What You Own, How You Operate, Implementation Standards (TDD, Code Clarity, Documentation), Boundaries, What You Never Do, Escalation Triggers (1-4), What You Load, Success Condition. Document version 1.0, created 2026-03-04.
+Complete, unmodified contents of /home/user/agent-governance-framework/agents/simulated-agent.md (201 lines). Includes: Who You Are, What You Own, How You Operate, Implementation Standards (TDD, Code Clarity, Documentation), Boundaries, What You Never Do, Escalation Triggers (1-4), What You Load, Success Condition. Document version 1.0, created 2026-03-04.
 
 **Field 2 — Current Brief (verbatim):**
-Complete, unmodified contents of /home/user/rgs-studio-framework/throwaway-test/BRIEF.md (83 lines). Defines: Task (static site generator in Python), 4 Phases with exact public APIs, Standards (TDD, Documentation, Scope, Escalation), Success Condition.
+Complete, unmodified contents of /home/user/agent-governance-framework/throwaway-test/BRIEF.md (83 lines). Defines: Task (static site generator in Python), 4 Phases with exact public APIs, Standards (TDD, Documentation, Scope, Escalation), Success Condition.
 
 **Field 3 — Generation count:** 2 (incremented from 1)
 
@@ -172,8 +172,8 @@ No work occurred after Checkpoint 2 (the compression anchor) before the rotation
 **Status: CLEAN**
 **Generation: 2 (post-rotation)**
 **Files reviewed:**
-- /home/user/rgs-studio-framework/throwaway-test/sitegen/builder.py (150 lines)
-- /home/user/rgs-studio-framework/throwaway-test/tests/test_builder.py (209 lines)
+- /home/user/agent-governance-framework/throwaway-test/sitegen/builder.py (150 lines)
+- /home/user/agent-governance-framework/throwaway-test/tests/test_builder.py (209 lines)
 
 **Findings:**
 - **Scope:** builder.py exposes exactly: `SiteBuilder(source_dir: str, build_dir: str, template_dir: str)` (line 42), `SiteBuilder.build() -> BuildResult` (line 54), `BuildResult.pages_built: int` and `BuildResult.errors: list[str]` (lines 24, 31-32). Matches Brief Phase 3 API exactly. `_extract_front_matter` (line 126) is private.
@@ -194,8 +194,8 @@ No work occurred after Checkpoint 2 (the compression anchor) before the rotation
 **Status: CLEAN**
 **Generation: 2**
 **Files reviewed:**
-- /home/user/rgs-studio-framework/throwaway-test/sitegen/cli.py (77 lines)
-- /home/user/rgs-studio-framework/throwaway-test/tests/test_cli.py (92 lines)
+- /home/user/agent-governance-framework/throwaway-test/sitegen/cli.py (77 lines)
+- /home/user/agent-governance-framework/throwaway-test/tests/test_cli.py (92 lines)
 
 **Findings:**
 - **Scope:** cli.py exposes exactly one public function: `main(args: list) -> int` (line 13). Matches Brief Phase 4 API exactly.
@@ -320,16 +320,16 @@ The Condenser seed contained sufficient signal for seamless continuation. The ve
 - Post-rotation continuity was seamless
 
 **Files produced:**
-- /home/user/rgs-studio-framework/throwaway-test/sitegen/__init__.py
-- /home/user/rgs-studio-framework/throwaway-test/sitegen/parser.py
-- /home/user/rgs-studio-framework/throwaway-test/sitegen/templates.py
-- /home/user/rgs-studio-framework/throwaway-test/sitegen/builder.py
-- /home/user/rgs-studio-framework/throwaway-test/sitegen/cli.py
-- /home/user/rgs-studio-framework/throwaway-test/tests/__init__.py
-- /home/user/rgs-studio-framework/throwaway-test/tests/test_parser.py
-- /home/user/rgs-studio-framework/throwaway-test/tests/test_templates.py
-- /home/user/rgs-studio-framework/throwaway-test/tests/test_builder.py
-- /home/user/rgs-studio-framework/throwaway-test/tests/test_cli.py
+- /home/user/agent-governance-framework/throwaway-test/sitegen/__init__.py
+- /home/user/agent-governance-framework/throwaway-test/sitegen/parser.py
+- /home/user/agent-governance-framework/throwaway-test/sitegen/templates.py
+- /home/user/agent-governance-framework/throwaway-test/sitegen/builder.py
+- /home/user/agent-governance-framework/throwaway-test/sitegen/cli.py
+- /home/user/agent-governance-framework/throwaway-test/tests/__init__.py
+- /home/user/agent-governance-framework/throwaway-test/tests/test_parser.py
+- /home/user/agent-governance-framework/throwaway-test/tests/test_templates.py
+- /home/user/agent-governance-framework/throwaway-test/tests/test_builder.py
+- /home/user/agent-governance-framework/throwaway-test/tests/test_cli.py
 
 ---
 

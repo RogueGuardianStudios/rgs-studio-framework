@@ -1,5 +1,5 @@
 ﻿# MEMORY_TEMPLATE.md
-# Rogue Guardian Studios — Agent Memory Dump
+# Agent Memory Dump
 # This document is the persistent memory for a single agent.
 # It lives in the agent's branch and is never passed directly
 # to other agents. Briefs are derived from this document.

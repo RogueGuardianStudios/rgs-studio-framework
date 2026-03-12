@@ -1,10 +1,10 @@
 # open-questions-rules.md
-# Rogue Guardian Studios — Open Questions Rules
+# Open Questions Rules
 # This document governs how open-questions.md and
 # open-questions-archive.md are maintained.
 # All agents that read or write open-questions.md
 # must read this document first.
-# This document is immutable. Only the studio owner
+# This document is immutable. Only the human
 # may modify it.
 
 
@@ -49,7 +49,7 @@ to an existing entry via escalation.
 The orchestrator decides whether to add or update.
 
 
-The studio owner may write directly at any time.
+The human may write directly at any time.
 
 
 Only the orchestrator may move entries to
@@ -166,7 +166,7 @@ are unmanaged risk.
 
 If a question has been blocked or failed for
 more than three sessions without progress,
-the orchestrator escalates to the studio owner
+the orchestrator escalates to the human
 for conclave consultation.
 
 
@@ -175,5 +175,5 @@ for conclave consultation.
 
 *Rules version: 1.0*
 *Created: 2026-03-02*
-*Author: Studio Owner — Rogue Guardian Studios*
-*Next review: At studio owner's discretion*
+*Author: [Your Name]*
+*Next review: At human's discretion*

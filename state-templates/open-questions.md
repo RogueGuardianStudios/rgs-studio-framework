@@ -1,5 +1,5 @@
 # open-questions.md
-# Rogue Guardian Studios — Open Questions
+# Open Questions
 # This file tracks all unresolved questions affecting
 # active work. It is the most dynamic state file
 # in the system. Items arrive, progress, and leave.

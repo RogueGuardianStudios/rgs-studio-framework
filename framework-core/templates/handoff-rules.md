@@ -1,10 +1,10 @@
 # handoff-rules.md
-# Rogue Guardian Studios — Handoff Rules
+# Handoff Rules
 # This document governs how HANDOFF_TEMPLATE.md is
 # used and maintained.
 # All agents that produce or receive a Handoff must
 # read this document first.
-# This document is immutable. Only the studio owner
+# This document is immutable. Only the human
 # may modify it.
 
 ---
@@ -68,8 +68,8 @@ Voting rules:
 - One dissenting vote — the group may proceed.
   The dissent must be documented in the Handoff.
 - Two or more dissenting votes — escalate to the
-  studio owner before proceeding. Do not merge.
-- Studio owner is the final tiebreaker.
+  human before proceeding. Do not merge.
+- Human is the final tiebreaker.
   Their decision is logged in decisions.md.
 
 A PR that has not passed group review does not
@@ -131,7 +131,7 @@ cannot agree that the phase is complete, escalate
 to the orchestrator.
 
 If the orchestrator cannot resolve the disagreement,
-escalate to the studio owner.
+escalate to the human.
 
 Do not proceed on a disputed Handoff.
 
@@ -139,6 +139,6 @@ Do not proceed on a disputed Handoff.
 
 *Rules version: 1.0*
 *Created: 2026-03-02*
-*Author: Studio Owner — Rogue Guardian Studios*
-*Next review: At studio owner's discretion*
+*Author: [Your Name]*
+*Next review: At human's discretion*
 

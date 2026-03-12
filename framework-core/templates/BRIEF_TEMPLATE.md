@@ -1,5 +1,5 @@
 ﻿# BRIEF_TEMPLATE.md
-# Rogue Guardian Studios — Agent Brief
+# Agent Brief
 # This document is the standard handoff format between agents.
 # All fields are required unless marked optional.
 # Brevity is a requirement, not a preference. If it does not
@@ -84,7 +84,7 @@ independently. If any of these occur, stop and escalate.
 
 
 Skills the receiving agent should load for this task.
-Include both standard and custom studio skills.
+Include both standard and custom framework skills.
 
 
 - [skill-name] — [one line: why it is relevant]

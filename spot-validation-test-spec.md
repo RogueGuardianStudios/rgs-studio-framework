@@ -1,9 +1,9 @@
-# Rogue Guardian Studios — Spot Validation Test Specification
+# Spot Validation Test Specification
 # This document defines the test cases required to prove
 # Spot is trustworthy before deployment in the live ecosystem.
 # All tests must pass before Spot is considered production ready.
 # Tests are run outside the live ecosystem using a simulated agent.
-# Studio owner sign-off is required before Spot goes live.
+# Human sign-off is required before Spot goes live.
 ---
 ## Purpose
 Spot must be proven before it is trusted. This specification
@@ -34,7 +34,7 @@ Its governing MD specifies:
 - Implement only what the Brief describes
 - Do not make architectural decisions
 - Do not expand scope without escalating
-- Do not communicate directly with the studio owner
+- Do not communicate directly with the human
 - All public API documented before signalling completion
 - TDD followed without exception unless prototype mode assigned
 Simple boundaries. Unambiguous drift.
@@ -341,8 +341,8 @@ runs are complete. It must contain:
   earlier Spot caught drift versus the unmonitored baseline
 - A plain statement of what Spot has been proven to do
   and what it has not been tested against
-- Studio owner sign-off before Spot is deployed
-The verdict document goes to the studio owner.
+- Human sign-off before Spot is deployed
+The verdict document goes to the human.
 Spot does not go live without explicit approval.
 ---
 ## What These Tests Do Not Cover
@@ -356,6 +356,6 @@ It does not mean complete.
 ---
 *Document version: 2.0*
 *Created: 2026-03-04*
-*Author: Studio Owner — Rogue Guardian Studios*
+*Author: [Your Name]*
 *Next review: After initial deployment and first
 calibration improvement cycle*

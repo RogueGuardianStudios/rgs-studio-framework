@@ -1,5 +1,5 @@
 # agent-status.md
-# Rogue Guardian Studios — Agent Status
+# Agent Status
 # This file is a live snapshot of what every agent
 # is doing right now.
 # It is always current. It is never historical.
@@ -24,7 +24,7 @@ Do not infer status — read it here.
 **Blocked** — agent cannot proceed. See known-issues.md
 for the relevant entry.
 **Awaiting Sign-Off** — agent has completed work and
-is waiting for studio owner or orchestrator approval.
+is waiting for human or orchestrator approval.
 **Inactive** — agent is not spun up for this project.
 
 ---

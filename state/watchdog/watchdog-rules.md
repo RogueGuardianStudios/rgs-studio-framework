@@ -1,4 +1,4 @@
-# Rogue Guardian Studios — Watchdog State Rules
+# Watchdog State Rules
 # Governs how the watchdog state directory is maintained.
 # Covers: who reads and writes state files, what an
 # orphaned file means, and the lifecycle of
@@ -18,14 +18,25 @@ and are destroyed at clean stand-down.
 
 **spot-[agent-name].md** — One per active Spot instance.
 - Created by: Spot at spin-up
-- Written by: Spot (checkpoint entries, compression records)
-- Read by: Spot (at respin, to reconstruct state)
+- Written by: Spot (checkpoint entries, compression records,
+  HALT flags)
+- Read by: Spot (at respin, to reconstruct state),
+  PreToolUse hook (checks HALT flag before every tool call)
 - Destroyed by: Spot at clean stand-down
+
+**context-pct.txt** — Current context usage percentage.
+- Written by: StatusLine hook (inline command, after each
+  assistant message)
+- Read by: Spot (at each checkpoint, to check context
+  threshold), PreToolUse hook (context gate, before
+  every tool call)
+- Contains: a single number (e.g., `23.5`)
+- Not a permanent record. Overwritten on every update.
 
 **watchdog-rules.md** — This document.
 - Read by: Any agent that needs to understand state
   directory conventions.
-- Written by: Studio owner only.
+- Written by: Human only.
 
 ---
 
@@ -73,7 +84,7 @@ start (step 7 of session-open protocol in orchestrator.md).
 **When an orphaned file is detected:**
 1. The orchestrator writes an entry to state/known-issues.md
 2. The orphaned file is preserved — never deleted by automation
-3. The studio owner is alerted in the opening status summary
+3. The human is alerted in the opening status summary
 4. No recovery is attempted autonomously
 
 **Why orphaned files are never deleted:**
@@ -100,12 +111,14 @@ timestamp: [ISO 8601 timestamp]
 spot-instance: spot-[agent-name]
 ```
 
-The watched agent checks for a HALT flag before beginning
-each new unit of work. On seeing the flag, it stops
-immediately and outputs its current state.
+The PreToolUse hook (configured inline in Claude Code
+settings) enforces the HALT flag automatically. When the
+hook reads `halt: true` from the state file, it blocks
+every tool call the watched agent attempts. The agent
+cannot bypass this — enforcement is involuntary.
 
 Only Spot writes the HALT flag. Only Spot clears it,
-after explicit studio owner approval to resume. The
+after explicit human approval to resume. The
 HALT flag is never cleared autonomously.
 
 ---
@@ -113,4 +126,4 @@ HALT flag is never cleared autonomously.
 *Document version: 2.0*
 *Created: 2026-03-05*
 *Updated: 2026-03-12*
-*Author: Studio Owner — Rogue Guardian Studios*
+*Author: [Your Name]*

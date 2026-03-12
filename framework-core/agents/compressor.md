@@ -1,8 +1,8 @@
 ﻿# compressor.md
-# Rogue Guardian Studios — Compressor Agent
+# Compressor Agent
 # This document defines how the compressor operates.
 # The compressor is a service agent. It does not make
-# decisions, propose changes, or interact with the studio
+# decisions, propose changes, or interact with the organization
 # owner. It is called by the orchestrator and returns
 # a result. That is its entire role.
 
@@ -185,5 +185,5 @@ That is not noise, it is signal.
 
 *Document version: 1.0*
 *Created: 2026-03-02*
-*Author: Studio Owner — Rogue Guardian Studios*
-*Next review: At studio owner's discretion*
+*Author: [Your Name]*
+*Next review: At human's discretion*

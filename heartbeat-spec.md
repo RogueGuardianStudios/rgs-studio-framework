@@ -1,236 +1,263 @@
-# Rogue Guardian Studios — Spot Heartbeat
-# This document defines the heartbeat process.
-# The heartbeat is not an agent. It does not reason.
-# It is infrastructure — a persistent background script
-# that runs independently of any agent session.
-# It is the only component in the framework with
-# continuous runtime across session boundaries.
+# Context Hooks Specification
+# This document defines the hook-based context monitoring
+# infrastructure. The hooks are inline shell commands
+# configured in Claude Code settings. No script files.
+# They measure and gate. Everything that requires
+# judgment belongs to Spot or the orchestrator.
 ---
-## What the Heartbeat Is
-The heartbeat is a background script that runs as
-part of the Claude Code session environment.
-It starts at session initialization and runs
-until the session ends.
-It has one job: monitor context consumption for
-all active Spot instances and their watched agents,
-and trigger rotation cycles when thresholds are reached.
-It does not reason. It does not make decisions.
-It measures, compares, and triggers. Everything
-that requires judgment belongs to Spot or the
-orchestrator. The heartbeat executes rules.
+## What the Context Hooks Are
+Two inline Claude Code hooks that together replace the
+need for a background heartbeat process:
+
+**StatusLine** — an inline command that runs after each
+assistant message. Captures context window usage and
+writes it to a plain text file Spot can read.
+
+**PreToolUse** — an inline command that runs before
+every tool call. Two checks: (1) HALT flag in the Spot
+state file, (2) context usage against a hard threshold.
+Blocks the tool call if either check fails.
+
+No script files. No background processes. No polling.
+The hooks are configured entirely in Claude Code
+settings as inline bash commands.
 ---
-## What the Heartbeat Tracks
-For each active Spot instance the heartbeat maintains:
-```json
-{
-  "agent_name": "builder-core",
-  "spot_file": "state/watchdog/spot-builder-core.md",
-  "spot_status": "paused",
-  "agent_status": "active",
-  "last_rotation_timestamp": "2026-03-04T10:00:00",
-  "agent_context_at_last_rotation": 0,
-  "agent_context_current": 23,
-  "spot_checkpoint_count": 2,
-  "spot_checkpoint_cap": 8,
-  "check_interval_percent": 10,
-  "rotation_threshold_percent": 10
-}
-```
-This state is held in memory during the session.
-It is not written to disk — the state file is Spot's
-responsibility, not the heartbeat's. The heartbeat
-reads from the state file. It does not write to it.
+## Why Hooks Instead of a Heartbeat
+The original design used a background heartbeat process
+polling every 30 seconds. Hooks are better because:
+
+1. **Simpler** — no background daemon, no script files,
+   no dependencies beyond bash and jq
+2. **Enforcement** — the PreToolUse hook blocks tool
+   calls immediately on HALT. The agent cannot bypass it.
+3. **Native** — hooks are a built-in Claude Code feature.
+   No custom infrastructure to maintain.
+4. **No idle-agent problem** — an idle agent is not
+   consuming context. Monitoring only matters when the
+   agent is active, which is when hooks fire.
 ---
-## How the Heartbeat Gets Context Data
-The heartbeat reads context consumption via the
-Claude Code status line mechanism.
-The status line script receives JSON after each
-assistant message containing:
+## StatusLine Hook
+The statusline receives the full Claude Code session
+JSON on stdin after each assistant message. It contains:
 - context_window.used_percentage
 - context_window.remaining_percentage
 - context_window.total_input_tokens
 - context_window.context_window_size
-The status line script writes the current context
-percentage for each active session to a shared
-metrics file the heartbeat reads:
-```
-state/watchdog/context-metrics.json
-```
-The heartbeat reads this file on each cycle.
-The status line script writes to it atomically
-(write-to-temp then rename) to prevent race conditions.
+
+The statusline command:
+1. Reads the JSON from stdin
+2. Extracts `context_window.used_percentage`
+3. Writes the value to `state/watchdog/context-pct.txt`
+4. Outputs a display string for the status bar
+
+**Output file:** `state/watchdog/context-pct.txt`
+
+Contains a single number (e.g., `23.5`). Nothing else.
+This is the only file the statusline writes.
+Spot reads this file at each checkpoint to track
+the watched agent's context consumption.
+
+The statusline does not make decisions. It writes data.
 ---
-## Heartbeat Cycle
-The heartbeat runs on a fixed timer interval —
-default 30 seconds, configurable per session.
-Each cycle:
-1. Read context-metrics.json for all active sessions
-2. For each active Spot instance:
-   a. Calculate agent context delta since last rotation
-   b. Read current Spot checkpoint count from state file
-   c. Check both against their thresholds
-   d. If either threshold is reached — trigger rotation
-   e. Check for orphaned state files — state file exists
-      but no corresponding active session
-   f. Log the cycle result
+## PreToolUse Hook
+The PreToolUse hook runs before every tool call.
+It checks two things in sequence:
+
+**1. HALT check**
+The hook reads `state/watchdog/spot-[agent-name].md`
+where `[agent-name]` comes from the `SPOT_AGENT_NAME`
+environment variable set by the orchestrator at
+session start.
+
+- If `halt: true` is found → exit 2 (block tool call),
+  reason written to stderr
+
+If `SPOT_AGENT_NAME` is not set, the file path won't
+match anything. The HALT check passes. Safe default for
+sessions without Spot monitoring.
+
+**2. Context gate**
+The hook reads `state/watchdog/context-pct.txt`
+(written by the StatusLine hook after each assistant
+message). It compares the current usage against the
+`CONTEXT_THRESHOLD_PCT` environment variable (set by
+the orchestrator at session start, default 90%).
+
+- If usage >= threshold → exit 2 (block tool call),
+  reason written to stderr
+- If `context-pct.txt` does not exist → check passes
+  (file not yet written, safe default)
+
+The context gate is a circuit breaker. It prevents
+the agent from consuming more context past the hard
+limit. Spot still owns the rotation decision — the
+gate just freezes the agent until Spot wakes up and
+triggers rotation.
+
+**Environment variables:**
+- `SPOT_AGENT_NAME` — identifies which state file to
+  check for HALT. Set by orchestrator at session start.
+- `CONTEXT_THRESHOLD_PCT` — integer percentage for the
+  context gate. Default 90 if not set. Set by
+  orchestrator at session start.
+
+The hook does not write to any files. It does not
+make rotation decisions. Those are Spot's
+responsibilities.
 ---
-## Rotation Trigger Logic
-```
-agent_delta = agent_context_current - agent_context_at_last_rotation
-if agent_delta >= rotation_threshold_percent:
-    trigger rotation for this Spot instance
-if spot_checkpoint_count >= (spot_checkpoint_cap - 1):
-    trigger rotation for this Spot instance
-```
-The checkpoint cap check fires one checkpoint early —
-at cap minus one — to ensure Spot has headroom to
-complete the rotation cycle without hitting the cap
-mid-compression.
-Both conditions are checked every cycle.
-Whichever fires first triggers rotation.
-After rotation both values reset.
+## What Spot Owns (moved from hooks)
+Previously the hook infrastructure handled threshold
+comparison and rotation triggers. Now Spot owns all
+of this directly:
+
+**At each checkpoint, Spot:**
+1. Reads `state/watchdog/context-pct.txt` for the
+   watched agent's current context usage
+2. Compares against `agent_context_at_last_rotation`
+   plus `rotation_threshold_percent` from the state file
+3. If threshold reached → triggers rotation
+4. On values breach → writes HALT flag to state file
+   (enforced automatically by the PreToolUse hook)
+
+This is a cleaner separation:
+- **Hooks** handle data capture (statusline) and
+  hard stops (HALT enforcement + context gate)
+- **Spot** handles all judgment — threshold tuning,
+  drift detection, rotation decisions, escalation
 ---
-## Triggering Rotation
-When the heartbeat determines rotation is needed:
-1. Write a rotation trigger to the state file:
-   ```
-   state/watchdog/spot-[agent-name].md
-   trigger: rotation
-   reason: [agent_threshold | checkpoint_cap]
-   timestamp: [ISO timestamp]
-   agent_context_at_trigger: [percentage]
-   ```
-2. The status line script detects the trigger flag
-   on its next invocation and signals Spot
-3. Spot executes the rotation cycle per spot.md
-4. When rotation is complete Spot updates the state file
-5. The heartbeat reads the updated state file and
-   resets its tracking values for this instance
-The heartbeat does not directly control agent or
-Spot sessions. It writes trigger signals to the
-state file. The status line mechanism delivers them.
+## HALT Enforcement
+When Spot writes a HALT flag to the state file:
+1. The agent's next tool call hits the PreToolUse hook
+2. Hook reads `halt: true` from the state file
+3. Hook exits 2 — tool call blocked, reason on stderr
+4. Every subsequent tool call is also blocked
+5. The agent cannot perform any action until the
+   human approves clearing the HALT flag
+6. Spot clears the flag after human approval
+7. Hook reads the cleared state file and exits 0
+
+This is involuntary enforcement. The agent does not
+need to check for HALT flags. The hook does it.
 ---
-## Orphaned State File Detection
-On every cycle the heartbeat checks:
-For every file in state/watchdog/ matching
-spot-[agent-name].md:
-- Is there an active agent session for [agent-name]?
-- Is there an active Spot session for [agent-name]?
-If a state file exists with no corresponding active
-sessions — orphaned file detected.
-Action:
-1. Write an entry to state/known-issues.md immediately
-2. Preserve the orphaned state file — do not delete it
-3. Alert the orchestrator at its next session start
-4. Do not attempt recovery autonomously —
-   the orchestrator decides what happens to next
+## Context Gate Enforcement
+The context gate works the same way as HALT enforcement
+but triggers on context usage instead of a values breach:
+1. StatusLine writes context % to `context-pct.txt`
+   after each assistant message
+2. Agent attempts a tool call
+3. PreToolUse hook reads `context-pct.txt`
+4. If usage >= `CONTEXT_THRESHOLD_PCT` (default 90%) →
+   hook exits 2, tool call blocked
+5. Every subsequent tool call is also blocked
+6. Spot wakes at next checkpoint, sees threshold
+   exceeded, triggers rotation
+7. After rotation, context resets. StatusLine writes
+   the new (lower) percentage. Gate opens.
+
+The context gate is a backup to Spot's checkpoint-based
+threshold check. Spot checks every 5 minutes. The hook
+checks every tool call. Between Spot's checks, the gate
+prevents the agent from consuming context past the limit.
 ---
-## Multiple Spot Instances
-The heartbeat manages all active Spot instances
-simultaneously. Each instance is tracked independently.
-There is no interaction between tracking states —
-a rotation trigger for builder-core does not affect
-the tracking state for builder-tests.
-The orchestrator Spot instance is always present.
-It is initialized at session start and is the first
-entry in the heartbeat's tracking state.
----
-## What the Heartbeat Does Not Do
-- Make decisions about drift or behavioral integrity
-- Write to Spot state files (except trigger flags)
-- Interact with agents directly
-- Evaluate output quality
-- Trigger escalations — it flags orphaned files to
-  known-issues.md and defers to the orchestrator
-- Survive session end — it is a session-scoped process.
-  State files persist. The heartbeat does not.
----
-## Setup and Configuration
-The heartbeat is launched from a SessionStart hook
-in Claude Code:
+## Hook Configuration
+Add to `.claude/settings.json` or project settings:
 ```json
 {
+  "statusLine": {
+    "type": "command",
+    "command": "bash -c 'D=$(cat); mkdir -p state/watchdog; echo \"$D\" | jq -r \".context_window.used_percentage // empty\" > state/watchdog/context-pct.txt; echo \"$D\" | jq -r \"\\\"Ctx: \\\\(.context_window.used_percentage // 0)%\\\"\"'"
+  },
   "hooks": {
-    "SessionStart": [
+    "PreToolUse": [
       {
-        "command": "python3 environment/spot-heartbeat.py",
-        "async": false
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'SF=\"state/watchdog/spot-${SPOT_AGENT_NAME:-_}.md\"; [ -f \"$SF\" ] && grep -q \"^halt: true\" \"$SF\" && { echo \"HALT: values breach — blocked by Spot\" >&2; exit 2; }; CT=\"${CONTEXT_THRESHOLD_PCT:-90}\"; CF=\"state/watchdog/context-pct.txt\"; if [ -f \"$CF\" ]; then PCT=$(cut -d. -f1 < \"$CF\"); [ \"${PCT:-0}\" -ge \"$CT\" ] && { echo \"CONTEXT GATE: usage exceeds ${CT}% threshold — rotation required\" >&2; exit 2; }; fi; exit 0'"
+          }
+        ]
       }
     ]
   }
 }
 ```
-Configuration is passed via environment variables
-or a config file at session start:
-```json
-{
-  "heartbeat_interval_seconds": 30,
-  "default_check_interval_percent": 10,
-  "default_checkpoint_cap": 8,
-  "watchdog_state_dir": "state/watchdog/",
-  "context_metrics_file": "state/watchdog/context-metrics.json"
-}
-```
-Per-agent overrides are set by the orchestrator at
-Spot assignment and written to the state file.
-The heartbeat reads them from the state file when
-initialising tracking for a new Spot instance.
+No script files to install. No dependencies beyond
+bash and jq (both standard in Claude Code environments).
 ---
-## Status Line Script
-The status line script is a companion to the heartbeat.
-It runs inside each agent session and feeds context
-data to the shared metrics file.
-Location: environment/spot-status-line.py
-It receives the Claude Code status line JSON and:
-1. Extracts context_window.used_percentage
-2. Writes it atomically to context-metrics.json
-   keyed by agent session identifier
-3. Checks for rotation trigger flags in the state file
-4. If a trigger flag is present — signals the current
-   session that Spot needs to run
-The status line script is the bridge between the
-heartbeat (which runs outside sessions) and the
-agents (which run inside sessions).
+## Files Used by the Hook Infrastructure
+```
+state/watchdog/
+├── watchdog-rules.md          # Governs watchdog state maintenance
+├── context-pct.txt            # Written by statusline hook
+│                              # Read by Spot at each checkpoint
+│                              # Read by PreToolUse hook (context gate)
+│                              # Contains a single number (usage %)
+│                              # Not a permanent record
+└── spot-[agent-name].md       # One per active Spot instance
+                               # Owned by Spot
+                               # HALT flag read by PreToolUse hook
+```
+---
+## Rotation Flow
+1. Agent works normally. StatusLine writes context %
+   to `context-pct.txt` after each assistant message.
+2. If context usage reaches the hard threshold
+   (`CONTEXT_THRESHOLD_PCT`, default 90%), the
+   PreToolUse hook blocks further tool calls
+   immediately — the agent is frozen.
+3. Spot checks at its configured interval. Reads
+   `context-pct.txt` and compares against its own
+   rotation threshold (`rotation_threshold_percent`).
+4. When threshold reached, Spot triggers rotation
+   per its normal rotation sequence.
+5. After rotation, Spot resets
+   `agent_context_at_last_rotation` in the state file.
+6. StatusLine writes the new context % after the
+   respun agent's first message. Context gate opens.
+7. Monitoring continues.
+
+Two things can stop an agent's tool calls:
+- **HALT flag** — values breach, written by Spot
+- **Context gate** — usage exceeds hard threshold
 ---
 ## Empirical Calibration Values
-Two values must be measured during validation testing
-and stored in the heartbeat configuration:
+Two values must be measured during validation testing.
+These inform Spot's checkpoint cap calculation and are
+stored in the Spot state file at assignment:
+
 **compression_headroom**
 How much of Spot's context window is consumed by a
 full rotation cycle — reading all checkpoints, reading
 agent output, constructing the seed, verifying it,
 and executing both respins.
 Measured during Test Case 5 of the validation spec.
-Used to calculate the checkpoint cap.
+
 **average_checkpoint_size**
 How much of Spot's context window is consumed by a
 single checkpoint review and state file entry.
 Measured during Test Case 5 of the validation spec.
-Used to calculate the checkpoint cap.
+
 Until empirical values are available use:
 - compression_headroom: 40% of Spot's max context
 - average_checkpoint_size: 5% of Spot's max context
 - Resulting default checkpoint cap: 8
+
 These defaults are conservative by design.
 ---
-## Files Owned by the Heartbeat Environment
-```
-environment/
-├── spot-heartbeat.py          # Main heartbeat process
-├── spot-status-line.py        # Status line companion script
-└── environment-rules.md       # Governs environment setup
-state/watchdog/
-├── watchdog-rules.md          # Governs watchdog state maintenance
-├── context-metrics.json       # Written by status line scripts
-│                              # Read by heartbeat
-│                              # Not a permanent record
-└── spot-[agent-name].md       # One per active Spot instance
-                               # Owned by Spot
-                               # Read by heartbeat
-```
+## What the Hooks Do Not Do
+- Reason or make judgment calls
+- Trigger rotation (the context gate blocks, Spot rotates)
+- Write to Spot state files
+- Interact with agents beyond approve/block
+- Evaluate output quality
+- Survive session end — they run within the session.
+  State files persist. The hooks do not.
 ---
-*Document version: 1.0*
+*Document version: 3.1*
 *Created: 2026-03-04*
-*Author: Studio Owner — Rogue Guardian Studios*
-*Next review: After validation testing and first
-calibration improvement cycle*
+*Updated: 2026-03-12*
+*Author: [Your Name]*
+*Major change: Zero-script inline hooks. Threshold logic
+moved to Spot. Scripts deleted. (v3.0)*
+*Added context gate to PreToolUse hook. (v3.1)*

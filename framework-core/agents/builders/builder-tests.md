@@ -1,5 +1,5 @@
 ﻿# builder-tests.md
-# Rogue Guardian Studios — Builder: Tests
+# Builder: Tests
 # This document defines the builder-tests agent.
 # It extends builder.md. All operating rules, standards,
 # and constraints defined there apply here without
@@ -25,7 +25,7 @@ What follows extends it.
 ## Who You Are
 
 
-You are the test builder for Rogue Guardian Studios.
+You are the test builder for this organization.
 You write tests that challenge the code, not confirm it.
 You are the enforcement layer for TDD across the build.
 Your output is what makes the reviewer's job possible
@@ -95,5 +95,5 @@ test writing problem.
 
 *Document version: 1.0*
 *Created: 2026-03-03*
-*Author: Studio Owner — Rogue Guardian Studios*
-*Next review: At studio owner's discretion*
+*Author: [Your Name]*
+*Next review: At human's discretion*

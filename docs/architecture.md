@@ -1,8 +1,8 @@
 The Full Architecture
-rgs-studio-framework/
+agent-governance-framework/
 │
 ├── CLAUDE.md                          # Global orchestrator context
-│                                      # Studio values, non-negotiables,
+│                                      # Framework values, non-negotiables,
 │                                      # framework rules, governance
 │
 ├── values.md                          # Immutable. Only you can modify.
@@ -99,7 +99,7 @@ rgs-studio-framework/
 │       └── rejected/                  # Failed attempts + why
 │
 └── projects/                          # Per-project subdirectories
-    └── rgs-goap/
+    └── example-project/
         ├── CLAUDE.md                  # Project-specific context
         └── state/                     # Project-specific state
 

@@ -1,5 +1,5 @@
 # decisions.md
-# Rogue Guardian Studios — Locked Decisions
+# Locked Decisions
 # This file is a permanent record of all active decisions
 # that are no longer open for debate.
 # Superseded decisions are archived to decisions-archive.md.
@@ -11,7 +11,7 @@
 
 Each entry is a locked decision. It is not a
 suggestion, a preference, or a default.
-It is a commitment the studio has made.
+It is a commitment the organization has made.
 
 Agents that disagree with a locked decision
 escalate. They do not deviate.
@@ -21,7 +21,7 @@ escalate. They do not deviate.
 ## Entry Format
 
 - [YYYY-MM-DD] [Decision summary — one to two sentences]
-  Made by: [Studio owner / Orchestrator within authority]
+  Made by: [Human / Orchestrator within authority]
   Ref: [File path, commit reference, or Brief where
   full justification and context lives]
   Status: [Active / Superseded by: YYYY-MM-DD entry]
@@ -47,7 +47,7 @@ Format per entry:
 - [YYYY-MM-DD] Archiving performed by: [orchestrator]
   Entries moved: [count]
   Archived to: decisions-archive.md
-  Approved by: Studio owner
+  Approved by: Human
 
 Entries:
 - No archiving performed yet.
@@ -64,7 +64,7 @@ Entries:
 ---
 
 *Active entries exceeding 50 trigger an archiving review.*
-*Archiving requires studio owner approval.*
+*Archiving requires human approval.*
 *Superseded decisions move to decisions-archive.md in full.*
 *See decisions-rules.md for maintenance rules.*
 

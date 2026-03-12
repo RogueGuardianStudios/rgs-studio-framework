@@ -1,5 +1,5 @@
 # decisions-archive.md
-# Rogue Guardian Studios — Decisions Archive
+# Decisions Archive
 # This file holds superseded and inactive decisions
 # moved from decisions.md during archiving cycles.
 # Entries are preserved in full — complete context,
@@ -25,7 +25,7 @@ decision made through the normal process.
 ## Entry Format
 
 - [YYYY-MM-DD] [Decision summary — one to two sentences]
-  Made by: [Studio owner / Orchestrator within authority]
+  Made by: [Human / Orchestrator within authority]
   Ref: [File path, commit reference, or Brief where
   full justification and context lives]
   Status: [Superseded by: YYYY-MM-DD entry /

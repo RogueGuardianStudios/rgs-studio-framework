@@ -1,8 +1,8 @@
-# rgs-studio-framework
+# agent-governance-framework
 
-The studio governance framework for Rogue Guardian Studios.
+The agent governance framework.
 Contains the orchestrator, all agents, templates, skills, and
-studio values that apply to every project.
+values that apply to every project.
 
 ---
 
@@ -10,21 +10,19 @@ studio values that apply to every project.
 
 ### Starting a new project
 
-1. In your project repo, create a folder called `rgs-framework/`
-2. Copy the entire `framework-core/` folder into `rgs-framework/`
-3. Copy the entire `state-templates/` folder into `rgs-framework/state/`
-4. Create `rgs-framework/state/improvement-proposals/active/`,
+1. In your project repo, create a folder called `governance-framework/`
+2. Copy the entire `framework-core/` folder into `governance-framework/`
+3. Copy the entire `state-templates/` folder into `governance-framework/state/`
+4. Create `governance-framework/state/improvement-proposals/active/`,
    `results/`, `archive/merged/`, and `archive/rejected/`
-5. Edit `rgs-framework/state/active-project.md` with your
+5. Edit `governance-framework/state/active-project.md` with your
    project details
 
 Your project repo should look like:
 
     your-project/
-    ├── Assets/                    ← Unity project, untouched
-    ├── Packages/
-    ├── ProjectSettings/
-    └── rgs-framework/
+    ├── src/                       ← your project code
+    └── governance-framework/
         ├── CLAUDE.md              ← from framework-core
         ├── values.md
         ├── evaluation-rubric.md
@@ -35,7 +33,7 @@ Your project repo should look like:
         └── state/                 ← from state-templates, project-specific
 
 Open your project repo root in Claude Code.
-The orchestrator will find all framework files under rgs-framework/.
+The orchestrator will find all framework files under governance-framework/.
 
 ---
 
@@ -48,7 +46,7 @@ stays in your project repo permanently.
 
 **Returning improvements to the framework:**
 When a project session ends and the framework files have improved,
-copy `rgs-framework/` from your project back into this repo —
+copy `governance-framework/` from your project back into this repo —
 everything EXCEPT the `state/` folder.
 The `state/` folder never comes back. It belongs to the project.
 
@@ -68,4 +66,4 @@ Then commit and push to preserve the improvements for the next project.
 ---
 
 *Framework version: 1.0*
-*Author: Studio Owner — Rogue Guardian Studios*
+*Author: [Your Name]*

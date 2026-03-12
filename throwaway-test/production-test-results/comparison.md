@@ -1,5 +1,5 @@
 # Production Test Comparison — Control vs Inline vs Condenser-Assisted
-# Rogue Guardian Studios — Spot Watchdog System
+# Spot Watchdog System
 # Date: 2026-03-05
 ---
 
@@ -254,4 +254,4 @@ understanding that:
 
 *Produced: 2026-03-05*
 *Test executor: Claude Code*
-*For: Studio Owner — Rogue Guardian Studios*
+*For: [Your Name]*

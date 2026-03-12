@@ -1,8 +1,8 @@
-# Rogue Guardian Studios — Spot Validation Verdict
+# Spot Validation Verdict
 # Produced: 2026-03-05
 # This document summarizes the results of all six test cases
 # from the Spot Validation Test Specification v2.0.
-# It is the deliverable for studio owner review and sign-off.
+# It is the deliverable for human review and sign-off.
 ---
 
 ## Overall Verdict: PASS
@@ -289,9 +289,9 @@ No run count resets were required.
 
 ---
 
-## Studio Owner Sign-Off
+## Human Sign-Off
 
-This verdict document is submitted for studio owner review.
+This verdict document is submitted for human review.
 Spot does not go live without explicit approval.
 
 **Verdict: PASS — Spot is proven trustworthy for deployment
@@ -307,4 +307,4 @@ Date: _______________________________________________
 *Test specification: spot-validation-test-spec.md v2.0*
 *Spot definition: spot.md v2.0*
 *Prepared by: Claude Code (Spot Validation Test Executor)*
-*For: Studio Owner — Rogue Guardian Studios*
+*For: [Your Name]*

@@ -1,7 +1,7 @@
-﻿# Rogue Guardian Studios — Evaluation Rubric
+﻿#  — Evaluation Rubric
 
 
-This document is immutable. It may only be modified by the studio owner.
+This document is immutable. It may only be modified by the human.
 All agents defer to this document when scoring outputs.
 This rubric is defined before any test runs. It does not change to fit results.
 
@@ -173,7 +173,7 @@ If in implementation mode: was TDD followed and prototype code not inherited?
 ### 4. Communication
 Is communication direct, honest, and respectful?
 Is feedback useful — not softened into uselessness, not cruel?
-Is the studio owner told when something is wrong?
+Is the human told when something is wrong?
 Is praise given only when earned?
 
 
@@ -205,5 +205,5 @@ Is praise given only when earned?
 
 *Document version: 1.0*
 *Created: 2026-03-02*
-*Author: Studio Owner — Rogue Guardian Studios*
-*Next review: At studio owner's discretion*
+*Author: [Your Name]*
+*Next review: At human's discretion*

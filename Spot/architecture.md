@@ -1,9 +1,9 @@
 # The Full Architecture
 
-rgs-studio-framework/
+agent-governance-framework/
 │
 ├── CLAUDE.md                          # Global orchestrator context
-│                                      # Studio values, non-negotiables,
+│                                      # Framework values, non-negotiables,
 │                                      # framework rules, governance
 │
 ├── values.md                          # Immutable. Only you can modify.
@@ -64,6 +64,8 @@ rgs-studio-framework/
 │
 ├── environment/                       # Session-level infrastructure
 │   └── environment-rules.md          # Governs environment setup
+│                                      # Hooks are inline in Claude Code settings
+│                                      # (no script files — see heartbeat-spec.md)
 │
 ├── skills/
 │   ├── create-unity-package/
@@ -128,7 +130,7 @@ rgs-studio-framework/
 │       └── rejected/
 │
 └── projects/
-    └── rgs-goap/
+    └── example-project/
         ├── CLAUDE.md
         └── state/
 
@@ -208,7 +210,8 @@ At each interval, Spot:
        ↓
   Values breach?
        ↓ yes → Write HALT flag to agent's state file
-               Escalate directly to studio owner
+               (PreToolUse hook enforces — blocks all tool calls)
+               Escalate directly to human
                Do not rotate
        ↓ no
   Assign status (Clean / Minor drift / Significant drift)
@@ -221,12 +224,35 @@ At each interval, Spot:
        ↓ yes → Execute rotation cycle
        ↓ no  → Continue monitoring on interval
 
-SPOT rotation cycle:
+# Context Hooks (Infrastructure)
+
+Two inline Claude Code hooks (no script files):
+
+  StatusLine (inline bash + jq)
+       Fires after each assistant message
+       Writes context % to state/watchdog/context-pct.txt
+       Spot reads this file at each checkpoint
+
+  PreToolUse (inline bash)
+       Fires before every tool call
+       Check 1: HALT flag in Spot state file
+         HALT flag? → exit 2 (block tool use)
+       Check 2: context gate
+         Reads context-pct.txt
+         Usage >= CONTEXT_THRESHOLD_PCT (default 90%)?
+           → exit 2 (block tool use)
+       Both pass? → exit 0 (approve)
+
+Rotation decisions are Spot's responsibility.
+The hook only gates — Spot decides what to do next.
+See heartbeat-spec.md for full hook configuration.
+
+# SPOT Rotation Cycle
 
   Final checkpoint
        ↓
   Values breach on final check?
-       → Write HALT flag, escalate to studio owner. Do not rotate.
+       → Write HALT flag, escalate to human. Do not rotate.
        ↓
   Identify compression anchor
   (last verified clean checkpoint)
@@ -251,6 +277,8 @@ SPOT rotation cycle:
        ↓
   Respin Spot from state file
        ↓
+  Clear rotation trigger from state file
+       ↓
   Monitoring resumes on configured time interval
 
 ---
@@ -259,9 +287,9 @@ SPOT rotation cycle:
 
 1. Spot spins up, confirms ready to orchestrator
 2. Agent receives Brief
-3. Agent checks for HALT flag before each new unit of work —
-   if flag is present, stop immediately and output current state
-4. Agent works continuously — no pause/unpause required
+3. Agent works continuously — no pause/unpause required
+4. Context gate (PreToolUse hook) enforces HALT flags and
+   context threshold automatically — agent cannot bypass
 5. Spot monitors on its own time interval independently
 6. At completion: agent signals to orchestrator,
    Spot runs final checkpoint and stands down
