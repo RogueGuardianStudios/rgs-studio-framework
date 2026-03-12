@@ -80,50 +80,83 @@ sessions without Spot monitoring.
 The hook reads `state/watchdog/context-pct.txt`
 (written by the StatusLine hook after each assistant
 message). It compares the current usage against the
-`CONTEXT_THRESHOLD_PCT` environment variable (set by
-the orchestrator at session start, default 90%).
+threshold in `state/watchdog/context-threshold.txt`
+(written and owned by Spot).
 
-- If usage >= threshold → exit 2 (block tool call),
+- If usage >= threshold → the hook writes a wake signal
+  file (`state/watchdog/spot-wake-[agent-name].signal`)
+  to unpause Spot, then exits 2 (block tool call),
   reason written to stderr
 - If `context-pct.txt` does not exist → check passes
   (file not yet written, safe default)
+- If `context-threshold.txt` does not exist → check
+  passes (no Spot assigned, safe default)
 
-The context gate is a circuit breaker. It prevents
-the agent from consuming more context past the hard
-limit. Spot still owns the rotation decision — the
-gate just freezes the agent until Spot wakes up and
-triggers rotation.
+The context gate is the link between the agent and
+Spot. When the agent's context usage crosses the
+threshold, the hook simultaneously freezes the agent
+and wakes Spot. Spot then assesses the agent's state,
+decides what to do, and adjusts the threshold for the
+next wake-up.
 
 **Environment variables:**
 - `SPOT_AGENT_NAME` — identifies which state file to
-  check for HALT. Set by orchestrator at session start.
-- `CONTEXT_THRESHOLD_PCT` — integer percentage for the
-  context gate. Default 90 if not set. Set by
-  orchestrator at session start.
+  check for HALT and which wake signal file to write.
+  Set by orchestrator at session start.
 
-The hook does not write to any files. It does not
-make rotation decisions. Those are Spot's
-responsibilities.
+**Files read:**
+- `state/watchdog/spot-[agent-name].md` — HALT flag
+- `state/watchdog/context-pct.txt` — current usage
+- `state/watchdog/context-threshold.txt` — threshold
+
+**Files written:**
+- `state/watchdog/spot-wake-[agent-name].signal` —
+  created when threshold is breached. Signals Spot
+  to wake up and perform a checkpoint.
 ---
 ## What Spot Owns (moved from hooks)
 Previously the hook infrastructure handled threshold
 comparison and rotation triggers. Now Spot owns all
 of this directly:
 
-**At each checkpoint, Spot:**
-1. Reads `state/watchdog/context-pct.txt` for the
-   watched agent's current context usage
-2. Compares against `agent_context_at_last_rotation`
-   plus `rotation_threshold_percent` from the state file
-3. If threshold reached → triggers rotation
-4. On values breach → writes HALT flag to state file
-   (enforced automatically by the PreToolUse hook)
+**Spot's event-driven cycle:**
+1. At spin-up, Spot writes an initial threshold to
+   `state/watchdog/context-threshold.txt` (e.g., 5%)
+2. Spot pauses — waits for the wake signal
+3. When the agent's context usage crosses the threshold,
+   the PreToolUse hook freezes the agent and writes
+   `state/watchdog/spot-wake-[agent-name].signal`
+4. Spot wakes up and performs a checkpoint:
+   - Reads the watched agent's current work product
+   - Reads the governing MD file fresh
+   - Assesses behavioral integrity
+   - Passes the MD file and any corrective notes to
+     the agent
+5. Based on the assessment:
+   - **On track:** Spot bumps the threshold up
+     (e.g., 5% → 10% → 25% → 40%), deletes the wake
+     signal, and pauses again. The agent is unfrozen
+     because its usage is now below the new threshold.
+   - **Needs correction:** Spot passes corrective notes
+     alongside the MD file, bumps threshold, deletes
+     the wake signal, and pauses. Agent self-corrects.
+   - **Needs to stop:** Spot writes the HALT flag to
+     the state file. Agent remains frozen permanently
+     until human approval.
+6. The cycle repeats at each threshold crossing.
+
+**Threshold progression is Spot's judgment call.**
+Spot decides how much to bump the threshold based on
+the checkpoint assessment. Conservative early
+(small bumps), expanding as confidence grows.
 
 This is a cleaner separation:
-- **Hooks** handle data capture (statusline) and
-  hard stops (HALT enforcement + context gate)
-- **Spot** handles all judgment — threshold tuning,
+- **Hooks** handle data capture (statusline), threshold
+  enforcement (context gate), and wake signaling
+- **Spot** handles all judgment — threshold progression,
   drift detection, rotation decisions, escalation
+- **The threshold file** is the control surface between
+  hooks and Spot — Spot writes it, hooks read it
 ---
 ## HALT Enforcement
 When Spot writes a HALT flag to the state file:
@@ -140,24 +173,30 @@ This is involuntary enforcement. The agent does not
 need to check for HALT flags. The hook does it.
 ---
 ## Context Gate Enforcement
-The context gate works the same way as HALT enforcement
-but triggers on context usage instead of a values breach:
+The context gate is Spot's primary wake-up mechanism:
 1. StatusLine writes context % to `context-pct.txt`
    after each assistant message
 2. Agent attempts a tool call
-3. PreToolUse hook reads `context-pct.txt`
-4. If usage >= `CONTEXT_THRESHOLD_PCT` (default 90%) →
-   hook exits 2, tool call blocked
-5. Every subsequent tool call is also blocked
-6. Spot wakes at next checkpoint, sees threshold
-   exceeded, triggers rotation
-7. After rotation, context resets. StatusLine writes
-   the new (lower) percentage. Gate opens.
+3. PreToolUse hook reads `context-pct.txt` and
+   `context-threshold.txt`
+4. If usage >= threshold → hook writes wake signal
+   file (`spot-wake-[agent-name].signal`), then
+   exits 2 (tool call blocked)
+5. Spot detects the wake signal and performs a
+   checkpoint assessment
+6. Spot passes the agent its governing MD file and
+   any corrective notes
+7. If work continues: Spot bumps the threshold in
+   `context-threshold.txt`, deletes the wake signal.
+   Agent's next tool call passes because usage is now
+   below the new threshold.
+8. If work must stop: Spot writes the HALT flag.
+   Agent remains frozen.
 
-The context gate is a backup to Spot's checkpoint-based
-threshold check. Spot checks every 5 minutes. The hook
-checks every tool call. Between Spot's checks, the gate
-prevents the agent from consuming context past the limit.
+The context gate is not a backup — it is the primary
+event-driven trigger for Spot's checkpoint cycle.
+Spot does not poll on a timer. Spot wakes only when
+the hook signals it.
 ---
 ## Hook Configuration
 Add to `.claude/settings.json` or project settings:
@@ -174,7 +213,7 @@ Add to `.claude/settings.json` or project settings:
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'SF=\"state/watchdog/spot-${SPOT_AGENT_NAME:-_}.md\"; [ -f \"$SF\" ] && grep -q \"^halt: true\" \"$SF\" && { echo \"HALT: values breach — blocked by Spot\" >&2; exit 2; }; CT=\"${CONTEXT_THRESHOLD_PCT:-90}\"; CF=\"state/watchdog/context-pct.txt\"; if [ -f \"$CF\" ]; then PCT=$(cut -d. -f1 < \"$CF\"); [ \"${PCT:-0}\" -ge \"$CT\" ] && { echo \"CONTEXT GATE: usage exceeds ${CT}% threshold — rotation required\" >&2; exit 2; }; fi; exit 0'"
+            "command": "bash -c 'AN=\"${SPOT_AGENT_NAME:-_}\"; SF=\"state/watchdog/spot-${AN}.md\"; [ -f \"$SF\" ] && grep -q \"^halt: true\" \"$SF\" && { echo \"HALT: values breach — blocked by Spot\" >&2; exit 2; }; TF=\"state/watchdog/context-threshold.txt\"; CF=\"state/watchdog/context-pct.txt\"; if [ -f \"$CF\" ] && [ -f \"$TF\" ]; then PCT=$(cut -d. -f1 < \"$CF\"); CT=$(cut -d. -f1 < \"$TF\"); [ \"${PCT:-0}\" -ge \"${CT:-90}\" ] && { mkdir -p state/watchdog; touch \"state/watchdog/spot-wake-${AN}.signal\"; echo \"CONTEXT GATE: usage ${PCT}% exceeds ${CT}% threshold — Spot notified\" >&2; exit 2; }; fi; exit 0'"
           }
         ]
       }
@@ -188,38 +227,58 @@ bash and jq (both standard in Claude Code environments).
 ## Files Used by the Hook Infrastructure
 ```
 state/watchdog/
-├── watchdog-rules.md          # Governs watchdog state maintenance
-├── context-pct.txt            # Written by statusline hook
-│                              # Read by Spot at each checkpoint
-│                              # Read by PreToolUse hook (context gate)
-│                              # Contains a single number (usage %)
-│                              # Not a permanent record
-└── spot-[agent-name].md       # One per active Spot instance
-                               # Owned by Spot
-                               # HALT flag read by PreToolUse hook
+├── watchdog-rules.md                   # Governs watchdog state maintenance
+├── context-pct.txt                     # Written by statusline hook
+│                                       # Read by PreToolUse hook (context gate)
+│                                       # Read by Spot at each checkpoint
+│                                       # Contains a single number (usage %)
+│                                       # Not a permanent record
+├── context-threshold.txt               # Written by Spot (owns threshold)
+│                                       # Read by PreToolUse hook (context gate)
+│                                       # Contains a single number (threshold %)
+│                                       # Updated by Spot after each checkpoint
+├── spot-wake-[agent-name].signal       # Written by PreToolUse hook when
+│                                       # context gate triggers
+│                                       # Read and deleted by Spot after wake
+│                                       # Presence = "wake up and checkpoint"
+└── spot-[agent-name].md                # One per active Spot instance
+                                        # Owned by Spot
+                                        # HALT flag read by PreToolUse hook
 ```
 ---
-## Rotation Flow
-1. Agent works normally. StatusLine writes context %
+## Event-Driven Flow
+1. Spot spins up, writes initial threshold to
+   `context-threshold.txt` (e.g., `5`), pauses.
+2. Agent works normally. StatusLine writes context %
    to `context-pct.txt` after each assistant message.
-2. If context usage reaches the hard threshold
-   (`CONTEXT_THRESHOLD_PCT`, default 90%), the
-   PreToolUse hook blocks further tool calls
-   immediately — the agent is frozen.
-3. Spot checks at its configured interval. Reads
-   `context-pct.txt` and compares against its own
-   rotation threshold (`rotation_threshold_percent`).
-4. When threshold reached, Spot triggers rotation
-   per its normal rotation sequence.
-5. After rotation, Spot resets
-   `agent_context_at_last_rotation` in the state file.
-6. StatusLine writes the new context % after the
-   respun agent's first message. Context gate opens.
-7. Monitoring continues.
+3. Agent's context usage crosses the threshold.
+   PreToolUse hook blocks the tool call, writes
+   `spot-wake-[agent-name].signal`.
+4. Spot wakes, reads the agent's work product and
+   governing MD file, performs checkpoint assessment.
+5. Spot passes the governing MD file and any
+   corrective notes to the agent.
+6. Based on assessment:
+   - **On track:** Spot bumps threshold in
+     `context-threshold.txt` (e.g., 5 → 10 → 25 → 40),
+     deletes the wake signal. Agent's next tool call
+     passes because usage is below the new threshold.
+     Spot pauses again.
+   - **Needs correction:** Same as above, plus
+     corrective notes. Agent self-corrects and
+     continues working.
+   - **Needs to stop:** Spot writes HALT flag to the
+     state file. Agent stays frozen. Spot escalates.
+7. When Spot determines rotation is needed (based on
+   checkpoint cap or its own context judgment), it
+   executes the rotation sequence, resets the threshold
+   to the initial value, and pauses again.
+8. Cycle repeats.
 
 Two things can stop an agent's tool calls:
 - **HALT flag** — values breach, written by Spot
-- **Context gate** — usage exceeds hard threshold
+- **Context gate** — usage exceeds Spot's threshold
+  (temporary — cleared when Spot bumps the threshold)
 ---
 ## Empirical Calibration Values
 Two values must be measured during validation testing.
@@ -254,10 +313,14 @@ These defaults are conservative by design.
 - Survive session end — they run within the session.
   State files persist. The hooks do not.
 ---
-*Document version: 3.1*
+*Document version: 4.0*
 *Created: 2026-03-04*
 *Updated: 2026-03-12*
 *Author: [Your Name]*
 *Major change: Zero-script inline hooks. Threshold logic
 moved to Spot. Scripts deleted. (v3.0)*
 *Added context gate to PreToolUse hook. (v3.1)*
+*File-based threshold, event-driven Spot wake, graduated
+threshold progression. Replaced env var CONTEXT_THRESHOLD_PCT
+with state/watchdog/context-threshold.txt owned by Spot.
+Hook now writes wake signal to unpause Spot. (v4.0)*

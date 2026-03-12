@@ -108,6 +108,14 @@ agent-governance-framework/
 │   │
 │   └── watchdog/                      # Spot state
 │       ├── watchdog-rules.md          # Governs watchdog state maintenance
+│       ├── context-pct.txt            # Current context usage %
+│       │                              # Written by StatusLine hook
+│       ├── context-threshold.txt      # Context gate threshold
+│       │                              # Written by Spot, read by hook
+│       │                              # Graduated upward by Spot
+│       ├── spot-wake-[name].signal    # Wake signal from hook to Spot
+│       │                              # Created when threshold crossed
+│       │                              # Deleted by Spot after checkpoint
 │       └── spot-[agent-name].md       # One per active Spot instance
 │                                      # Created at spin-up
 │                                      # Survives respin cycles
@@ -199,13 +207,23 @@ YOU ← final sign-off before merge to main
 
 ---
 
-# How Spot Monitors
+# How Spot Monitors (Event-Driven)
 
-Spot runs on a configured time interval (default: 5 minutes).
-It does not pause. The watched agent does not initiate checks.
+Spot is event-driven, not timer-based. The PreToolUse hook
+wakes Spot when the agent's context crosses Spot's threshold.
 
-At each interval, Spot:
-
+  Spot spins up → writes initial threshold (default 5%)
+       to context-threshold.txt → pauses
+       ↓
+  Agent works. StatusLine writes context % after each message.
+       ↓
+  Agent's context crosses threshold?
+       ↓ yes → PreToolUse hook:
+               1. Freezes agent (exit 2)
+               2. Writes spot-wake-[agent-name].signal
+       ↓
+  Spot wakes on signal
+       ↓
   Reads watched agent's current work product
        ↓
   Values breach?
@@ -217,12 +235,14 @@ At each interval, Spot:
   Assign status (Clean / Minor drift / Significant drift)
        ↓
   Act on status per status ladder
+  Pass governing MD file + any corrective notes to agent
        ↓
   Write checkpoint entry to state file
        ↓
   checkpoint_count >= checkpoint_cap - 1?
-       ↓ yes → Execute rotation cycle
-       ↓ no  → Continue monitoring on interval
+       ↓ yes → Execute rotation cycle, reset threshold
+       ↓ no  → Bump threshold in context-threshold.txt
+               Delete wake signal → pause
 
 # Context Hooks (Infrastructure)
 
@@ -231,21 +251,21 @@ Two inline Claude Code hooks (no script files):
   StatusLine (inline bash + jq)
        Fires after each assistant message
        Writes context % to state/watchdog/context-pct.txt
-       Spot reads this file at each checkpoint
 
   PreToolUse (inline bash)
        Fires before every tool call
        Check 1: HALT flag in Spot state file
          HALT flag? → exit 2 (block tool use)
        Check 2: context gate
-         Reads context-pct.txt
-         Usage >= CONTEXT_THRESHOLD_PCT (default 90%)?
-           → exit 2 (block tool use)
+         Reads context-pct.txt and context-threshold.txt
+         Usage >= threshold?
+           → Write spot-wake-[agent-name].signal
+           → exit 2 (block tool use, wake Spot)
        Both pass? → exit 0 (approve)
 
-Rotation decisions are Spot's responsibility.
-The hook only gates — Spot decides what to do next.
-See heartbeat-spec.md for full hook configuration.
+The hook freezes the agent AND wakes Spot in one action.
+Spot decides what to do next — bump threshold, correct,
+or halt. See heartbeat-spec.md for full hook configuration.
 
 # SPOT Rotation Cycle
 
@@ -277,21 +297,25 @@ See heartbeat-spec.md for full hook configuration.
        ↓
   Respin Spot from state file
        ↓
-  Clear rotation trigger from state file
+  Reset threshold in context-threshold.txt to initial value
        ↓
-  Monitoring resumes on configured time interval
+  Spot pauses — waits for next wake signal
 
 ---
 
 # Agent Protocol With Spot
 
-1. Spot spins up, confirms ready to orchestrator
-2. Agent receives Brief
-3. Agent works continuously — no pause/unpause required
-4. Context gate (PreToolUse hook) enforces HALT flags and
-   context threshold automatically — agent cannot bypass
-5. Spot monitors on its own time interval independently
-6. At completion: agent signals to orchestrator,
+1. Spot spins up, writes initial threshold, pauses
+2. Agent receives Brief, starts working
+3. Agent works continuously until context crosses
+   Spot's threshold
+4. PreToolUse hook freezes agent + wakes Spot
+5. Spot checkpoints, passes MD file + notes to agent,
+   bumps threshold, deletes wake signal, pauses
+6. Agent unfreezes (usage now below new threshold),
+   continues working
+7. Cycle repeats at each threshold crossing
+8. At completion: agent signals to orchestrator,
    Spot runs final checkpoint and stands down
 
 ---

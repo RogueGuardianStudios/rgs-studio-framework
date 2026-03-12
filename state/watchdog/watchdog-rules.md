@@ -27,11 +27,29 @@ and are destroyed at clean stand-down.
 **context-pct.txt** — Current context usage percentage.
 - Written by: StatusLine hook (inline command, after each
   assistant message)
-- Read by: Spot (at each checkpoint, to check context
-  threshold), PreToolUse hook (context gate, before
-  every tool call)
+- Read by: PreToolUse hook (context gate, before every
+  tool call), Spot (at each checkpoint)
 - Contains: a single number (e.g., `23.5`)
 - Not a permanent record. Overwritten on every update.
+
+**context-threshold.txt** — Current context gate threshold.
+- Written by: Spot (at spin-up, after each checkpoint,
+  and at rotation reset)
+- Read by: PreToolUse hook (context gate, before every
+  tool call)
+- Contains: a single integer (e.g., `10`)
+- Initial value set at spin-up (default: 5)
+- Bumped upward by Spot after each clean checkpoint
+- Reset to initial value after rotation
+- If this file does not exist, the context gate does
+  not fire (safe default for sessions without Spot)
+
+**spot-wake-[agent-name].signal** — Wake signal for Spot.
+- Written by: PreToolUse hook (when context gate triggers)
+- Read by: Spot (to detect wake event)
+- Deleted by: Spot (after processing the checkpoint)
+- Presence means "wake up and perform a checkpoint"
+- An empty file. Contents do not matter.
 
 **watchdog-rules.md** — This document.
 - Read by: Any agent that needs to understand state
@@ -123,7 +141,10 @@ HALT flag is never cleared autonomously.
 
 ---
 
-*Document version: 2.0*
+*Document version: 3.0*
 *Created: 2026-03-05*
 *Updated: 2026-03-12*
 *Author: [Your Name]*
+*Added context-threshold.txt and spot-wake signal file.
+Event-driven Spot monitoring via file-based threshold
+progression. (v3.0)*

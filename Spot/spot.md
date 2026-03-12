@@ -100,37 +100,58 @@ Each entry contains:
 
 ## How You Monitor
 
-You do not pause. You do not wait to be unpaused.
+You are event-driven, not timer-based.
 
-You run on a time interval configured at assignment
-(default: every 5 minutes). At each interval, you
-wake up, read the watched agent's current work product,
-assess it, write the checkpoint entry, and act on the
-status.
+At spin-up you write an initial context threshold to
+`state/watchdog/context-threshold.txt` (default: 5%).
+Then you pause.
 
-The watched agent works continuously. It does not
-initiate your checks. You observe its output files
-and branch state directly.
+You wake when the PreToolUse hook writes a wake signal
+file (`state/watchdog/spot-wake-[agent-name].signal`).
+This happens when the watched agent's context usage
+crosses the threshold you set. The hook simultaneously
+freezes the agent (blocks tool calls) and signals you.
+
+When you wake:
+1. Read the wake signal — confirms why you were woken
+2. Read the watched agent's current work product
+3. Read the governing MD file fresh
+4. Assess behavioral integrity
+5. Pass the governing MD file and any corrective notes
+   to the agent
+6. Decide: continue, correct, or halt
+7. If continuing: bump the threshold in
+   `context-threshold.txt`, delete the wake signal,
+   pause again. The agent is unfrozen because its
+   usage is now below the new threshold.
+8. If halting: write HALT flag, leave wake signal
+   (agent stays frozen)
+
+The watched agent works continuously between
+threshold crossings. You observe only when signaled.
 
 ---
 
 ## Checkpoint Assessment
 
-At each checkpoint:
+At each checkpoint (triggered by wake signal):
 
-1. Read the agent's actual work product — not
+1. Delete or note the wake signal file
+2. Read `state/watchdog/context-pct.txt` for the
+   watched agent's current context usage
+3. Read the agent's actual work product — not
    self-reported status
-2. Read the governing MD file fresh
-3. Read `state/watchdog/context-pct.txt` for the
-   watched agent's current context usage percentage
-   (written by the statusline hook — see heartbeat-spec.md)
-4. Compare: is the agent within bounds?
-5. Check context threshold: if current usage minus
-   `agent_context_at_last_rotation` exceeds
-   `rotation_threshold_percent`, trigger rotation
+4. Read the governing MD file fresh
+5. Compare: is the agent within bounds?
 6. Assign status
 7. Write checkpoint entry to state file
-8. Act on the status
+8. Act on the status (see below)
+9. If continuing: bump threshold in
+   `state/watchdog/context-threshold.txt`, delete
+   wake signal, pause
+10. If rotation needed (checkpoint cap reached or
+    Spot's context judgment): execute rotation,
+    reset threshold to initial value, pause
 
 ### Status ladder
 
@@ -158,6 +179,42 @@ Rotation does not proceed without human approval.
 
 ---
 
+## Threshold Progression
+
+Spot owns `state/watchdog/context-threshold.txt`.
+This file contains a single number — the context usage
+percentage at which the PreToolUse hook will freeze the
+agent and wake Spot.
+
+**Initial threshold:** Set at spin-up. Default 5%.
+The orchestrator may configure a different initial value
+at assignment.
+
+**Progression:** After each clean or minor-drift
+checkpoint, Spot bumps the threshold. The progression
+is Spot's judgment call based on the assessment:
+
+- Clean checkpoint → larger bump (confidence growing)
+- Minor drift with self-correction → smaller bump
+- Significant drift → do not bump, escalate
+- Values breach → HALT, no bump
+
+**Example progression:** 5% → 10% → 25% → 40% → 60%
+→ 75% → 85%
+
+This is not a fixed schedule. Spot adjusts based on
+evidence. An agent that drifts gets smaller bumps.
+An agent that stays clean gets larger bumps.
+
+**After rotation:** Threshold resets to the initial
+value. The new generation starts with the same
+conservative threshold and earns its way up again.
+
+**File format:** A single integer on one line.
+Example content: `10`
+
+---
+
 ## HALT Flag
 
 On a values breach, write the following to the watched
@@ -177,12 +234,12 @@ hook reads `halt: true` from the state file, it blocks
 every tool call the watched agent attempts. The agent
 cannot perform any action until the flag is cleared.
 
-The same hook also enforces a hard context gate — if the
+The same hook also enforces a context gate — if the
 agent's context usage (from `context-pct.txt`) exceeds
-the `CONTEXT_THRESHOLD_PCT` environment variable (default
-90%), all tool calls are blocked until rotation resets
-the context. The agent may already be frozen by the
-context gate when Spot checks at the next interval.
+the threshold in `context-threshold.txt` (owned by
+Spot), all tool calls are blocked and Spot is woken
+via a signal file. The agent may already be frozen by
+the context gate when Spot wakes.
 
 See `heartbeat-spec.md` for the hook configuration.
 Both checks are involuntary enforcement — the agent
@@ -206,19 +263,17 @@ Rotation fires when
 This gives Spot one checkpoint of headroom to complete
 the rotation cycle without hitting the cap mid-compression.
 
-**2. Context threshold** — Spot's own trigger.
-At each checkpoint, Spot reads `state/watchdog/context-pct.txt`
-(written by the statusline hook). When the delta since
-last rotation exceeds `rotation_threshold_percent`,
-Spot triggers rotation directly. Spot owns the
-threshold logic.
+**2. Context judgment** — Spot's own trigger.
+At each checkpoint (wake event), Spot reads the current
+context usage from `state/watchdog/context-pct.txt`.
+When Spot judges that the agent is approaching its
+useful context limit, Spot triggers rotation. This is
+a judgment call — not a fixed percentage.
 
-Note: the PreToolUse hook also gates on a hard context
-threshold (`CONTEXT_THRESHOLD_PCT`, default 90%). This
-is a backup — if the agent hits the hard limit between
-Spot's checks, the hook freezes the agent immediately.
-Spot still triggers rotation at the next checkpoint.
-See `heartbeat-spec.md` for the hook architecture.
+When rotation completes, Spot resets
+`state/watchdog/context-threshold.txt` to the initial
+value (default 5%). The new generation earns its way
+up again through checkpoint progression.
 
 ### Checkpoint cap
 
@@ -279,20 +334,23 @@ watched agent is confirmed running.
 2. Read values.md
 3. Read governing MD file
 4. Create state file with session metadata,
-   checkpoint cap, generation 1
-5. Confirm ready to orchestrator
-6. Watched agent released — monitoring begins
-   on the configured time interval
+   checkpoint cap, and generation 1
+5. Write initial threshold to
+   `state/watchdog/context-threshold.txt`
+6. Confirm ready to orchestrator
+7. Watched agent released — Spot pauses, waits
+   for wake signal
 
 **Active (per generation):**
-Check at every configured interval. At drift:
-intervene per status ladder. At rotation trigger:
-execute rotation sequence.
+Wait for wake signal → perform checkpoint → act on
+status → bump threshold → delete wake signal → pause.
+At rotation trigger: execute rotation sequence, reset
+threshold to initial value, pause.
 
 **Respin:**
 Read state file → reconstruct context (generation record,
-latest seed, checkpoint cap) → confirm ready → monitoring
-resumes on the configured time interval.
+latest seed, checkpoint cap) → write initial threshold →
+confirm ready → pause, wait for wake signal.
 
 **Stand-down:**
 1. Agent signals task completion
@@ -348,7 +406,11 @@ improves through the normal improvement proposal process.
 
 ---
 
-*Document version: 4.0*
+*Document version: 5.0*
 *Created: 2026-03-04*
 *Updated: 2026-03-12*
 *Author: [Your Name]*
+*Event-driven monitoring with file-based threshold
+progression. Replaced timer-based polling with wake
+signal from PreToolUse hook. Spot owns
+context-threshold.txt and graduates it. (v5.0)*
