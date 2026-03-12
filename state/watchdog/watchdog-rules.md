@@ -28,7 +28,8 @@ and are destroyed at clean stand-down.
 - Written by: StatusLine hook (inline command, after each
   assistant message)
 - Read by: Spot (at each checkpoint, to check context
-  threshold)
+  threshold), PreToolUse hook (context gate, before
+  every tool call)
 - Contains: a single number (e.g., `23.5`)
 - Not a permanent record. Overwritten on every update.
 

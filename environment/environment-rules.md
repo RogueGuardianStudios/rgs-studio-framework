@@ -33,8 +33,20 @@ Writes context usage percentage to
 assistant message.
 
 **PreToolUse hook** — inline bash command.
-Checks for HALT flag in Spot state files before
-every tool call. Blocks if HALT is active.
+Two checks before every tool call:
+1. HALT flag in Spot state files — blocks if active
+2. Context gate — blocks if context usage exceeds
+   `CONTEXT_THRESHOLD_PCT` (default 90%)
+
+## Environment Variables
+
+Set by the orchestrator at session start:
+
+- `SPOT_AGENT_NAME` — identifies the Spot state file
+  for this agent's session. Used by the PreToolUse
+  hook to find the HALT flag.
+- `CONTEXT_THRESHOLD_PCT` — integer percentage for
+  the context gate hard limit. Default 90 if not set.
 
 ---
 

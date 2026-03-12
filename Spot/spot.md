@@ -176,8 +176,17 @@ settings) enforces the HALT flag automatically. When the
 hook reads `halt: true` from the state file, it blocks
 every tool call the watched agent attempts. The agent
 cannot perform any action until the flag is cleared.
-See `heartbeat-spec.md` for the hook configuration. This is involuntary
-enforcement — the agent does not need to check for it.
+
+The same hook also enforces a hard context gate — if the
+agent's context usage (from `context-pct.txt`) exceeds
+the `CONTEXT_THRESHOLD_PCT` environment variable (default
+90%), all tool calls are blocked until rotation resets
+the context. The agent may already be frozen by the
+context gate when Spot checks at the next interval.
+
+See `heartbeat-spec.md` for the hook configuration.
+Both checks are involuntary enforcement — the agent
+does not need to check for them.
 
 Only Spot writes the HALT flag. Only Spot clears it,
 after human approval to resume. Never clear
@@ -201,8 +210,14 @@ the rotation cycle without hitting the cap mid-compression.
 At each checkpoint, Spot reads `state/watchdog/context-pct.txt`
 (written by the statusline hook). When the delta since
 last rotation exceeds `rotation_threshold_percent`,
-Spot triggers rotation directly. No external script
-is involved — Spot owns the threshold logic.
+Spot triggers rotation directly. Spot owns the
+threshold logic.
+
+Note: the PreToolUse hook also gates on a hard context
+threshold (`CONTEXT_THRESHOLD_PCT`, default 90%). This
+is a backup — if the agent hits the hard limit between
+Spot's checks, the hook freezes the agent immediately.
+Spot still triggers rotation at the next checkpoint.
 See `heartbeat-spec.md` for the hook architecture.
 
 ### Checkpoint cap

@@ -235,11 +235,16 @@ Two inline Claude Code hooks (no script files):
 
   PreToolUse (inline bash)
        Fires before every tool call
-       Checks for HALT flag in Spot state file
-       HALT flag? → exit 2 (block tool use)
-       No flag? → exit 0 (approve)
+       Check 1: HALT flag in Spot state file
+         HALT flag? → exit 2 (block tool use)
+       Check 2: context gate
+         Reads context-pct.txt
+         Usage >= CONTEXT_THRESHOLD_PCT (default 90%)?
+           → exit 2 (block tool use)
+       Both pass? → exit 0 (approve)
 
-Threshold logic is Spot's responsibility, not the hook's.
+Rotation decisions are Spot's responsibility.
+The hook only gates — Spot decides what to do next.
 See heartbeat-spec.md for full hook configuration.
 
 # SPOT Rotation Cycle
@@ -284,7 +289,7 @@ See heartbeat-spec.md for full hook configuration.
 2. Agent receives Brief
 3. Agent works continuously — no pause/unpause required
 4. Context gate (PreToolUse hook) enforces HALT flags and
-   rotation triggers automatically — agent cannot bypass
+   context threshold automatically — agent cannot bypass
 5. Spot monitors on its own time interval independently
 6. At completion: agent signals to orchestrator,
    Spot runs final checkpoint and stands down
