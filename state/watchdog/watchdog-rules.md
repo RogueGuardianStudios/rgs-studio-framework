@@ -18,9 +18,19 @@ and are destroyed at clean stand-down.
 
 **spot-[agent-name].md** — One per active Spot instance.
 - Created by: Spot at spin-up
-- Written by: Spot (checkpoint entries, compression records)
-- Read by: Spot (at respin, to reconstruct state)
+- Written by: Spot (checkpoint entries, compression records,
+  HALT flags)
+- Read by: Spot (at respin, to reconstruct state),
+  PreToolUse hook (checks HALT flag before every tool call)
 - Destroyed by: Spot at clean stand-down
+
+**context-pct.txt** — Current context usage percentage.
+- Written by: StatusLine hook (inline command, after each
+  assistant message)
+- Read by: Spot (at each checkpoint, to check context
+  threshold)
+- Contains: a single number (e.g., `23.5`)
+- Not a permanent record. Overwritten on every update.
 
 **watchdog-rules.md** — This document.
 - Read by: Any agent that needs to understand state
@@ -100,9 +110,11 @@ timestamp: [ISO 8601 timestamp]
 spot-instance: spot-[agent-name]
 ```
 
-The watched agent checks for a HALT flag before beginning
-each new unit of work. On seeing the flag, it stops
-immediately and outputs its current state.
+The PreToolUse hook (configured inline in Claude Code
+settings) enforces the HALT flag automatically. When the
+hook reads `halt: true` from the state file, it blocks
+every tool call the watched agent attempts. The agent
+cannot bypass this — enforcement is involuntary.
 
 Only Spot writes the HALT flag. Only Spot clears it,
 after explicit human approval to resume. The

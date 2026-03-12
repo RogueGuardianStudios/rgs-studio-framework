@@ -1,208 +1,170 @@
 # Context Hooks Specification
 # This document defines the hook-based context monitoring
-# infrastructure. The hooks are not agents. They do not reason.
-# They are infrastructure — lightweight scripts that run
-# as Claude Code hooks within each agent session.
-# They measure, compare, and gate. Everything that requires
+# infrastructure. The hooks are inline shell commands
+# configured in Claude Code settings. No script files.
+# They measure and gate. Everything that requires
 # judgment belongs to Spot or the orchestrator.
 ---
 ## What the Context Hooks Are
-Two Claude Code hooks that together replace the need for
-a background heartbeat process:
+Two inline Claude Code hooks that together replace the
+need for a background heartbeat process:
 
-**Context Reporter** (`environment/context-reporter.py`)
-A StatusLine hook. Runs after each assistant message.
-Captures context window metrics and writes them to a
-shared metrics file.
+**StatusLine** — an inline command that runs after each
+assistant message. Captures context window usage and
+writes it to a plain text file Spot can read.
 
-**Context Gate** (`environment/context-gate.py`)
-A PreToolUse hook. Runs before every tool call.
-Reads context metrics, checks thresholds and flags,
-and approves or blocks the tool call.
+**PreToolUse** — an inline command that runs before
+every tool call. Checks for a HALT flag in the Spot
+state file. Blocks the tool call if HALT is active.
 
-Together they form an event-driven monitoring system.
-No background process. No polling. The agent's own
-activity drives the monitoring cycle.
+No script files. No background processes. No polling.
+The hooks are configured entirely in Claude Code
+settings as inline bash commands.
 ---
 ## Why Hooks Instead of a Heartbeat
 The original design used a background heartbeat process
 polling every 30 seconds. Hooks are better because:
 
-1. **More granular** — checks happen at every tool call,
-   not on a fixed timer
-2. **Simpler** — no background daemon to launch, manage,
-   or recover from crashes
-3. **Enforcement** — the gate can block a tool call
-   immediately. A heartbeat could only write flags and
-   hope they were read before the next action.
+1. **Simpler** — no background daemon, no script files,
+   no dependencies beyond bash and jq
+2. **Enforcement** — the PreToolUse hook blocks tool
+   calls immediately on HALT. The agent cannot bypass it.
+3. **Native** — hooks are a built-in Claude Code feature.
+   No custom infrastructure to maintain.
 4. **No idle-agent problem** — an idle agent is not
    consuming context. Monitoring only matters when the
-   agent is active, which is exactly when hooks fire.
+   agent is active, which is when hooks fire.
 ---
-## Context Reporter (StatusLine Hook)
-**File:** `environment/context-reporter.py`
-
-The reporter receives Claude Code status JSON on stdin
-after each assistant message. It contains:
+## StatusLine Hook
+The statusline receives the full Claude Code session
+JSON on stdin after each assistant message. It contains:
 - context_window.used_percentage
 - context_window.remaining_percentage
 - context_window.total_input_tokens
 - context_window.context_window_size
 
-The reporter:
-1. Extracts context window metrics
-2. Reads the existing metrics file
-3. Updates the entry for this session
-4. Writes atomically to the metrics file
-   (write-to-temp then rename to prevent race conditions)
+The statusline command:
+1. Reads the JSON from stdin
+2. Extracts `context_window.used_percentage`
+3. Writes the value to `state/watchdog/context-pct.txt`
+4. Outputs a display string for the status bar
 
-**Metrics file:** `state/watchdog/context-metrics.json`
+**Output file:** `state/watchdog/context-pct.txt`
 
-Each session's entry:
-```json
-{
-  "session-id-here": {
-    "used_percentage": 23.5,
-    "remaining_percentage": 76.5,
-    "total_input_tokens": 47000,
-    "context_window_size": 200000,
-    "agent_name": "builder-core"
-  }
-}
-```
+Contains a single number (e.g., `23.5`). Nothing else.
+This is the only file the statusline writes.
+Spot reads this file at each checkpoint to track
+the watched agent's context consumption.
 
-The reporter does not make decisions. It writes data.
+The statusline does not make decisions. It writes data.
 ---
-## Context Gate (PreToolUse Hook)
-**File:** `environment/context-gate.py`
+## PreToolUse Hook
+The PreToolUse hook runs before every tool call.
+It checks one thing: is there a HALT flag?
 
-The gate receives JSON on stdin before every tool call:
-```json
-{
-  "session_id": "...",
-  "tool_name": "...",
-  "tool_input": {}
-}
-```
+The hook reads `state/watchdog/spot-[agent-name].md`
+where `[agent-name]` comes from the `SPOT_AGENT_NAME`
+environment variable set by the orchestrator at
+session start.
 
-The gate runs this sequence:
-1. **Fast path** — if `state/watchdog/` does not exist,
-   approve immediately. No monitoring configured.
-2. Read `context-metrics.json` for this session's
-   current context percentage
-3. Find this agent's Spot state file
-   (`state/watchdog/spot-[agent-name].md`).
-   If no Spot file exists, approve. No Spot watching.
-4. **HALT check** — if the state file contains
-   `halt: true`, block with reason.
-5. **Rotation trigger check** — if the state file
-   contains `trigger: rotation`, block with reason.
-   Rotation is already in progress.
-6. **Context threshold check** — calculate delta:
-   ```
-   delta = current_context - context_at_last_rotation
-   if delta >= rotation_threshold_percent:
-       write rotation trigger to state file
-       block tool use
-   ```
-7. If none of the above, **approve**.
+- If `halt: true` is found → exit 2 (block tool call),
+  reason written to stderr
+- Otherwise → exit 0 (approve tool call)
 
-The gate returns JSON on stdout:
-```json
-{"decision": "approve"}
-```
-or:
-```json
-{"decision": "block", "reason": "..."}
-```
+If `SPOT_AGENT_NAME` is not set, the file path won't
+match anything. The hook exits 0. Safe default for
+sessions without Spot monitoring.
 
-The gate must be fast. It runs before every tool call.
-No network calls. No heavy computation. Read two small
-files, compare numbers, return.
+The hook does not check thresholds. It does not write
+to any files. It does not make rotation decisions.
+Those are Spot's responsibilities.
 ---
-## How This Replaces the Heartbeat
-The heartbeat had three jobs:
-1. Track context consumption → **Context Reporter** does this
-2. Check thresholds and trigger rotation → **Context Gate** does this
-3. Detect orphaned state files → **Not needed in hook model**.
-   Orphaned state files are detected by the orchestrator
-   at session start when it reads `state/watchdog/`.
+## What Spot Owns (moved from hooks)
+Previously the hook infrastructure handled threshold
+comparison and rotation triggers. Now Spot owns all
+of this directly:
 
-The heartbeat's polling cycle is replaced by the natural
-cadence of tool calls. Every tool call is a monitoring
-checkpoint. This is more frequent and more reliable than
-a 30-second timer.
+**At each checkpoint, Spot:**
+1. Reads `state/watchdog/context-pct.txt` for the
+   watched agent's current context usage
+2. Compares against `agent_context_at_last_rotation`
+   plus `rotation_threshold_percent` from the state file
+3. If threshold reached → triggers rotation
+4. On values breach → writes HALT flag to state file
+   (enforced automatically by the PreToolUse hook)
+
+This is a cleaner separation:
+- **Hooks** handle data capture (statusline) and
+  hard stops (HALT enforcement)
+- **Spot** handles all judgment — thresholds, drift
+  detection, rotation decisions, escalation
 ---
-## Rotation Flow With Hooks
-1. Agent works normally. Every tool call passes through
-   the gate. Gate approves — fast path.
-2. Context Reporter writes updated metrics after each
-   assistant message.
-3. Agent's context grows. At some tool call, the gate
-   calculates that the delta exceeds the threshold.
-4. Gate writes a rotation trigger to the Spot state file.
-5. Gate blocks the tool call with reason:
-   "Context threshold reached — triggering Spot rotation"
-6. The blocked tool call surfaces in the agent's session
-   as an error/notification. Spot picks up the trigger
-   on its next check.
-7. Spot executes the rotation cycle per spot.md.
-8. After rotation, Spot clears the trigger from the
-   state file and resets `agent_context_at_last_rotation`.
-9. Agent resumes. Gate approves again.
----
-## HALT Enforcement With Hooks
+## HALT Enforcement
 When Spot writes a HALT flag to the state file:
-1. The agent's next tool call hits the gate.
-2. Gate reads `halt: true` from the state file.
-3. Gate blocks with reason:
-   "HALT flag active — values breach under review by human"
-4. Every subsequent tool call is also blocked.
+1. The agent's next tool call hits the PreToolUse hook
+2. Hook reads `halt: true` from the state file
+3. Hook exits 2 — tool call blocked, reason on stderr
+4. Every subsequent tool call is also blocked
 5. The agent cannot perform any action until the
-   human approves clearing the HALT flag.
-6. Spot clears the flag after human approval.
-7. Gate reads the cleared state file and approves.
+   human approves clearing the HALT flag
+6. Spot clears the flag after human approval
+7. Hook reads the cleared state file and exits 0
 
-This is stronger enforcement than the old model where
-the agent had to check for a HALT flag voluntarily.
-The gate makes it involuntary.
+This is involuntary enforcement. The agent does not
+need to check for HALT flags. The hook does it.
 ---
 ## Hook Configuration
 Add to `.claude/settings.json` or project settings:
 ```json
 {
+  "statusLine": {
+    "type": "command",
+    "command": "bash -c 'D=$(cat); mkdir -p state/watchdog; echo \"$D\" | jq -r \".context_window.used_percentage // empty\" > state/watchdog/context-pct.txt; echo \"$D\" | jq -r \"\\\"Ctx: \\\\(.context_window.used_percentage // 0)%\\\"\"'"
+  },
   "hooks": {
-    "StatusLine": [
-      {
-        "command": "python3 environment/context-reporter.py",
-        "timeout": 5000
-      }
-    ],
     "PreToolUse": [
       {
-        "command": "python3 environment/context-gate.py",
-        "timeout": 5000
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'SF=\"state/watchdog/spot-${SPOT_AGENT_NAME:-_}.md\"; [ -f \"$SF\" ] && grep -q \"^halt: true\" \"$SF\" && { echo \"HALT: values breach — blocked by Spot\" >&2; exit 2; }; exit 0'"
+          }
+        ]
       }
     ]
   }
 }
 ```
+No script files to install. No dependencies beyond
+bash and jq (both standard in Claude Code environments).
 ---
-## Files Owned by the Hook Infrastructure
+## Files Used by the Hook Infrastructure
 ```
-environment/
-├── context-gate.py            # PreToolUse hook
-├── context-reporter.py        # StatusLine hook
-└── environment-rules.md       # Governs environment setup
 state/watchdog/
 ├── watchdog-rules.md          # Governs watchdog state maintenance
-├── context-metrics.json       # Written by context-reporter
-│                              # Read by context-gate
+├── context-pct.txt            # Written by statusline hook
+│                              # Read by Spot at each checkpoint
+│                              # Contains a single number (usage %)
 │                              # Not a permanent record
 └── spot-[agent-name].md       # One per active Spot instance
                                # Owned by Spot
-                               # Read by context-gate
+                               # HALT flag read by PreToolUse hook
 ```
+---
+## Rotation Flow
+1. Agent works normally. StatusLine writes context %
+   to `context-pct.txt` after each assistant message.
+2. Spot checks at its configured interval. Reads
+   `context-pct.txt` and compares against threshold.
+3. When threshold reached, Spot triggers rotation
+   per its normal rotation sequence.
+4. After rotation, Spot resets
+   `agent_context_at_last_rotation` in the state file.
+5. Monitoring continues.
+
+The PreToolUse hook is not involved in rotation.
+Only HALT stops an agent's tool calls.
 ---
 ## Empirical Calibration Values
 Two values must be measured during validation testing.
@@ -229,17 +191,17 @@ Until empirical values are available use:
 These defaults are conservative by design.
 ---
 ## What the Hooks Do Not Do
-- Make decisions about drift or behavioral integrity
-- Interact with agents beyond approve/block responses
+- Reason or make judgment calls
+- Calculate thresholds or trigger rotation
+- Write to Spot state files
+- Interact with agents beyond approve/block
 - Evaluate output quality
-- Trigger escalations — they block tool use and surface
-  reasons. Spot and the orchestrator handle escalation.
 - Survive session end — they run within the session.
   State files persist. The hooks do not.
 ---
-*Document version: 2.0*
+*Document version: 3.0*
 *Created: 2026-03-04*
 *Updated: 2026-03-12*
 *Author: [Your Name]*
-*Major change: Replaced heartbeat polling model with
-hook-based event-driven architecture (v2.0)*
+*Major change: Zero-script inline hooks. Threshold logic
+moved to Spot. Scripts deleted. (v3.0)*

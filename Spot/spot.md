@@ -121,10 +121,16 @@ At each checkpoint:
 1. Read the agent's actual work product — not
    self-reported status
 2. Read the governing MD file fresh
-3. Compare: is the agent within bounds?
-4. Assign status
-5. Write checkpoint entry to state file
-6. Act on the status
+3. Read `state/watchdog/context-pct.txt` for the
+   watched agent's current context usage percentage
+   (written by the statusline hook — see heartbeat-spec.md)
+4. Compare: is the agent within bounds?
+5. Check context threshold: if current usage minus
+   `agent_context_at_last_rotation` exceeds
+   `rotation_threshold_percent`, trigger rotation
+6. Assign status
+7. Write checkpoint entry to state file
+8. Act on the status
 
 ### Status ladder
 
@@ -165,11 +171,12 @@ timestamp: [ISO 8601 timestamp]
 spot-instance: spot-[agent-name]
 ```
 
-The PreToolUse context gate (`environment/context-gate.py`)
-enforces the HALT flag automatically. When the gate reads
-`halt: true` from the state file, it blocks every tool
-call the watched agent attempts. The agent cannot perform
-any action until the flag is cleared. This is involuntary
+The PreToolUse hook (configured inline in Claude Code
+settings) enforces the HALT flag automatically. When the
+hook reads `halt: true` from the state file, it blocks
+every tool call the watched agent attempts. The agent
+cannot perform any action until the flag is cleared.
+See `heartbeat-spec.md` for the hook configuration. This is involuntary
 enforcement — the agent does not need to check for it.
 
 Only Spot writes the HALT flag. Only Spot clears it,
@@ -190,14 +197,13 @@ Rotation fires when
 This gives Spot one checkpoint of headroom to complete
 the rotation cycle without hitting the cap mid-compression.
 
-**2. Context threshold** — the context gate's trigger.
-The PreToolUse hook (`environment/context-gate.py`)
-monitors agent context consumption. When the delta
-since last rotation exceeds `rotation_threshold_percent`,
-the gate writes a rotation trigger to the state file
-and blocks further tool calls. Spot reads the trigger
-on its next check and executes the rotation cycle.
-See `heartbeat-spec.md` for the full hook architecture.
+**2. Context threshold** — Spot's own trigger.
+At each checkpoint, Spot reads `state/watchdog/context-pct.txt`
+(written by the statusline hook). When the delta since
+last rotation exceeds `rotation_threshold_percent`,
+Spot triggers rotation directly. No external script
+is involved — Spot owns the threshold logic.
+See `heartbeat-spec.md` for the hook architecture.
 
 ### Checkpoint cap
 

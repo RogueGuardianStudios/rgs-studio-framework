@@ -63,9 +63,9 @@ agent-governance-framework/
 │                                      # Preserved for traceability
 │
 ├── environment/                       # Session-level infrastructure
-│   ├── context-gate.py               # PreToolUse hook — blocks on HALT/rotation
-│   ├── context-reporter.py           # StatusLine hook — writes context metrics
 │   └── environment-rules.md          # Governs environment setup
+│                                      # Hooks are inline in Claude Code settings
+│                                      # (no script files — see heartbeat-spec.md)
 │
 ├── skills/
 │   ├── create-unity-package/
@@ -210,7 +210,7 @@ At each interval, Spot:
        ↓
   Values breach?
        ↓ yes → Write HALT flag to agent's state file
-               (context-gate.py enforces — blocks all tool calls)
+               (PreToolUse hook enforces — blocks all tool calls)
                Escalate directly to human
                Do not rotate
        ↓ no
@@ -226,22 +226,21 @@ At each interval, Spot:
 
 # Context Hooks (Infrastructure)
 
-Two Claude Code hooks provide context monitoring:
+Two inline Claude Code hooks (no script files):
 
-  context-reporter.py (StatusLine hook)
+  StatusLine (inline bash + jq)
        Fires after each assistant message
-       Writes context % to state/watchdog/context-metrics.json
-       ↓
-  context-gate.py (PreToolUse hook)
-       Fires before every tool call
-       Reads context-metrics.json + Spot state file
-       ↓
-       HALT flag? → Block tool use
-       Rotation trigger? → Block tool use
-       Context delta >= threshold? → Write rotation trigger, block
-       Otherwise → Approve
+       Writes context % to state/watchdog/context-pct.txt
+       Spot reads this file at each checkpoint
 
-See heartbeat-spec.md for full hook architecture.
+  PreToolUse (inline bash)
+       Fires before every tool call
+       Checks for HALT flag in Spot state file
+       HALT flag? → exit 2 (block tool use)
+       No flag? → exit 0 (approve)
+
+Threshold logic is Spot's responsibility, not the hook's.
+See heartbeat-spec.md for full hook configuration.
 
 # SPOT Rotation Cycle
 

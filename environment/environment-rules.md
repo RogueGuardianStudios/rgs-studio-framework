@@ -20,17 +20,21 @@ process. Changes require direct human action.
 **environment-rules.md**
 This document.
 
-**context-gate.py**
-PreToolUse hook. Runs before every tool call.
-Checks HALT flags, rotation triggers, and context
-thresholds. Approves or blocks tool use.
-See `heartbeat-spec.md` for the full specification.
+## Hooks
 
-**context-reporter.py**
-StatusLine hook. Runs after each assistant message.
-Captures context window metrics and writes them
-atomically to `state/watchdog/context-metrics.json`.
-See `heartbeat-spec.md` for the full specification.
+Context monitoring hooks are configured as inline
+commands in Claude Code settings. No script files.
+See `heartbeat-spec.md` for the full specification
+and configuration JSON.
+
+**StatusLine hook** — inline bash + jq command.
+Writes context usage percentage to
+`state/watchdog/context-pct.txt` after each
+assistant message.
+
+**PreToolUse hook** — inline bash command.
+Checks for HALT flag in Spot state files before
+every tool call. Blocks if HALT is active.
 
 ---
 

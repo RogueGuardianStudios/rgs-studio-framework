@@ -188,21 +188,24 @@ reason: values-breach
 timestamp: [ISO 8601 timestamp]
 spot-instance: spot-[agent-name]
 ```
-The PreToolUse context gate (`environment/context-gate.py`)
-enforces the HALT flag automatically. When the gate reads
-`halt: true` from the state file, it blocks every tool
-call the watched agent attempts. The agent cannot perform
-any action until the flag is cleared. This is involuntary
-enforcement — the agent does not need to check for it.
+The PreToolUse hook (configured inline in Claude Code
+settings) enforces the HALT flag automatically. When the
+hook reads `halt: true` from the state file, it blocks
+every tool call the watched agent attempts. The agent
+cannot perform any action until the flag is cleared.
+See `heartbeat-spec.md` for the hook configuration.
+This is involuntary enforcement — the agent does not
+need to check for it.
 Only Spot writes the HALT flag. Only Spot clears it,
 after explicit human approval to resume.
 ---
 ## The Rotation Cycle
 Two triggers fire rotation:
-1. `checkpoint_count >= checkpoint_cap - 1` (Spot's own trigger)
-2. Context gate writes `trigger: rotation` to the state file
-   when agent context delta exceeds `rotation_threshold_percent`
-   (see `heartbeat-spec.md` for the hook architecture)
+1. `checkpoint_count >= checkpoint_cap - 1`
+2. Context threshold: at each checkpoint, Spot reads
+   `state/watchdog/context-pct.txt` (written by statusline
+   hook) and compares against `rotation_threshold_percent`.
+   See `heartbeat-spec.md` for the hook architecture.
 
 When either trigger fires:
 1. Spot runs a final checkpoint on the current agent state
