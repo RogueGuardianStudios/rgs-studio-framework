@@ -1,0 +1,70 @@
+  What Spot Is Good At
+
+  Catching explicit violations. When an agent writes code-first, expands scope, or makes unauthorized decisions — and
+  the evidence is in the files — Spot finds it reliably. Even Haiku. The compound test proved this across 4 escalation
+  stages with zero misses on the obvious stuff.
+
+  Tracking patterns across checkpoints. Spot correctly distinguished "one TDD skip" (minor) from "systematic TDD failure
+   + scope expansion" (significant). It didn't just count violations — it recognized qualitative escalation.
+
+  Enforcing hard boundaries. The HALT mechanism works (now that BUG 1 is fixed). The gate blocks tools. The threshold
+  ratchet controls when checkpoints fire. The compression cycle preserves state. The plumbing is solid.
+
+  What Spot Cannot Do
+
+  Catch subtle drift. Everything we tested had smoking-gun evidence — comments saying "written after code," methods
+  obviously outside the Brief. A real agent won't document its own violations. An agent that slowly reframes its Brief
+  interpretation, or makes "reasonable" design choices that happen to expand scope, won't leave the same kind of
+  evidence. Spot reads files. If the drift isn't visible in the diff, Spot won't see it.
+
+  Assess intent or reasoning quality. Spot checks "did you cross this line" — not "is this the right approach." A
+  perfectly in-bounds implementation that's architecturally terrible will get Clean. Spot is a boundary monitor, not a
+  code reviewer.
+
+  Detect drift in real-time. Spot only runs at threshold checkpoints. Between checkpoints, the agent works unsupervised.
+   If an agent drifts and self-corrects before the next checkpoint, Spot never sees it. If an agent drifts right after a
+   checkpoint, it has the full threshold increment of runway before Spot fires again.
+
+  Monitor itself. Spot assesses the agent's work product, but nobody assesses Spot. A lenient Spot (especially Haiku)
+  might miss things consistently. A hallucinating Spot could flag clean work. There's no watchdog for the watchdog.
+
+  Best Practices
+
+  1. Write tight Briefs with hard boundaries. Spot's accuracy is directly proportional to how unambiguous the governing
+  MD is. "Implement Add and Subtract" is easy to monitor. "Build something good" is impossible. The simulated-agent.md
+  works because its boundaries are binary — you either escalated or you didn't.
+
+  2. Use Haiku for routine monitoring, Sonnet for critical tasks. Haiku catches significant drift and compounding
+  patterns reliably. But it's more lenient on minor issues (missed the doc quality gap and coverage asymmetry in L9).
+  For high-stakes work, /spotcheck sonnet is there.
+
+  3. Keep the threshold increment at 15. This gives Spot 5-6 checkpoints before compression. Too low (5) means constant
+  interruptions. Too high (25) means fewer checkpoints and more unsupervised runway between them.
+
+  4. Don't rely on Spot for code quality. That's the reviewer's job. Spot checks behavioral integrity — scope, process,
+  boundaries, values. Pair Spot with code review for full coverage.
+
+  5. The feedback loop matters more than detection. Spot catching drift is only useful if the agent reads
+  spot-notes-agent.md and actually corrects. The CLAUDE.md protocol forces this, but we haven't proven it works
+  end-to-end with a real agent responding to feedback.
+
+  6. Compression seeds need to be specific. Vague seeds produce agents that re-derive context instead of continuing. The
+   more concrete the "verified state at anchor" section is, the better the new session picks up.
+
+  Known Limitations to Accept
+
+  - All testing was against synthetic drift. We haven't proven Spot catches real organic drift from a working agent.
+  - The feedback loop is untested end-to-end. We know Spot writes good corrections. We don't know if agents consistently
+   follow them.
+  - Single-session testing only. L10 (full ladder) and L12 (seed pickup) are still deferred.
+  - No adversarial testing. An agent that intentionally hides drift (rewrites comments, structures code to look
+  compliant) has not been tested against.
+  - No calibration data for Haiku Spot's context consumption. The empirical checkpoint cap was measured for Sonnet/Opus.
+   Haiku's checkpoint size may differ.
+
+  The Honest Summary
+
+  Spot is a reliable boundary enforcer when boundaries are clear and violations are visible. It's not an AI safety
+  solution — it's a process compliance tool. It catches agents that go off-script, not agents that are subtly wrong
+  while staying on-script. For what it's designed to do, it works. The infrastructure is proven, the detection is solid
+  on explicit violations, and Haiku is viable for production cost

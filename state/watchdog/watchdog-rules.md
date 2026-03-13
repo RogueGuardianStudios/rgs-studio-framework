@@ -36,7 +36,7 @@ clean stand-down.
 
 **context-threshold.txt** — Dynamic context threshold.
 - Created by: Orchestrator at session start (initial value,
-  default 15)
+  default 5)
 - Written by: Spot (raises after clean or minor drift
   checkpoint)
 - Read by: StatusLine hook (spawn check — compares against

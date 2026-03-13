@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo '{\"model\":{\"display_name\":\"Opus 4.6\"},\"context_window\":{\"used_percentage\":5.2,\"total_input_tokens\":1234}}' | bash ~/.claude/statusline.sh 2>&1)",
+      "Bash(cd \"C:/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework\" && rm -f state/watchdog/spot-gate-active && rm -f state/watchdog/spot.lock)",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git status*)",
+      "Bash(cat *)",
+      "Bash(echo * > state/watchdog/*)",
+      "Bash(rm -f state/watchdog/spot-gate-active)",
+      "Bash(rm -f state/watchdog/spot.lock)",
+      "Bash(rm state/watchdog/spot-gate-active)",
+      "Bash(rm state/watchdog/spot.lock)",
+      "Bash(date)",
+      "Bash(ls *)",
+      "Write(state/watchdog/*)",
+      "Edit(state/watchdog/*)",
+      "Bash(printf '60\\\\n' > \"/c/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework/state/watchdog/context-threshold.txt\")",
+      "Bash(node --test src/brief-engine/__tests__/brief-engine.test.js 2>&1)",
+      "Bash(npm test:*)",
+      "Bash(cd \"C:\\\\Users\\\\MattS\\\\Documents\\\\ClaudeRepo\\\\rgs-studio-framework\" && node --version && node --test src/brief-engine/__tests__/brief-engine.test.js 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\MattS\\\\Documents\\\\ClaudeRepo\\\\rgs-studio-framework\" && node --test src/brief-engine/__tests__/brief-engine.test.js 2>&1)",
+      "Bash(find /c/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework/src/brief-engine -type f -name \"*.js\" -o -name \"*.md\" 2>/dev/null | head -20)",
+      "Bash(cd \"/c/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework\" && node --test src/brief-engine/__tests__/brief-engine.test.js 2>&1 | head -30)",
+      "Bash(cd \"/c/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework\" && node --test src/brief-engine/__tests__/brief-engine.test.js 2>&1)",
+      "Bash(echo \"spot\" > \"C:/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework/state/watchdog/spot.lock\" && echo \"Lock created\")",
+      "Bash(cd \"C:/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework\" && node --test src/brief-engine/__tests__/brief-engine.test.js 2>&1)",
+      "Bash(echo 15 > \"C:/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework/state/watchdog/context-threshold.txt\")",
+      "Bash(cd \"C:/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework\" && bash -n ~/.claude/pretooluse.sh && echo \"Syntax OK\")",
+      "Bash(cd \"C:/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework\" && echo \"=== Test 1: Lock bypass — spot.lock exists, should exit 0 ===\" && echo \"spot\" > state/watchdog/spot.lock && echo '{\"tool_name\":\"Bash\"}' | bash ~/.claude/pretooluse.sh 2>&1; echo \"Exit code: $?\" && rm -f state/watchdog/spot.lock)",
+      "Bash(cd \"C:/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework\" && echo \"=== Test 2: Under threshold — should exit 0 silently ===\" && rm -f state/watchdog/spot-gate-active && echo 45 > state/watchdog/context-threshold.txt && echo 20 > state/watchdog/context-pct.txt && echo '{\"tool_name\":\"Bash\"}' | bash ~/.claude/pretooluse.sh 2>&1; echo \"Exit code: $?\")",
+      "Bash(cd \"C:/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework\" && echo \"=== Test 3: Phase 1 — over threshold, no gate marker, should warn + exit 0 ===\" && rm -f state/watchdog/spot-gate-active && echo 30 > state/watchdog/context-threshold.txt && echo 35 > state/watchdog/context-pct.txt && echo '{\"tool_name\":\"Bash\"}' | bash ~/.claude/pretooluse.sh 2>&1; echo \"Exit code: $?\" && echo \"Gate marker created:\" && ls -la state/watchdog/spot-gate-active 2>&1)",
+      "Bash(cd \"C:/Users/MattS/Documents/ClaudeRepo/rgs-studio-framework\" && echo \"threshold file:\" && xxd state/watchdog/context-threshold.txt && echo \"context file:\" && xxd state/watchdog/context-pct.txt)",
+      "Bash(find \"C:\\\\Users\\\\MattS\\\\Documents\\\\ClaudeRepo\\\\rgs-studio-framework\" -type f -name \"*spot*\" -o -name \"*watchdog*\" -o -name \"*compression*\" -o -name \"*threshold*\" 2>/dev/null | head -50)",
+      "Bash(find \"C:\\\\Users\\\\MattS\\\\Documents\\\\ClaudeRepo\\\\rgs-studio-framework\" -path \"*/.claude/skills*\" -type f 2>/dev/null | head -20)"
+    ]
+  }
+}
