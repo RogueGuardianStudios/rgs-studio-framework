@@ -1,0 +1,21 @@
+de/settings.json
++19
+{
+  "statusLine": {
+    "type": "command",
+    "command": "bash -c 'D=$(cat); mkdir -p state/watchdog; PCT=$(echo \"$D\" | jq -r \".context_window.used_percentage // empty\"); echo \"$PCT\" > state/watchdog/context-pct.txt; CT=15; TF=\"state/watchdog/context-threshold.txt\"; [ -f \"$TF\" ] && CT=$(cat \"$TF\"); LF=\"state/watchdog/spot.lock\"; IP=$(cut -d. -f1 <<< \"${PCT:-0}\"); if [ \"${IP:-0}\" -ge \"$CT\" ]; then if [ -f \"$LF\" ]; then kill -0 \"$(cat \"$LF\")\" 2>/dev/null || rm -f \"$LF\"; fi; if [ ! -f \"$LF\" ]; then ( claude --agent agents/spot.md & echo $! > \"$LF\"; wait; rm -f \"$LF\" ) &  fi; fi; echo \"$D\" | jq -r \"\\\"Ctx: \\\\(.context_window.used_percentage // 0)% / ${CT}%\\\"\"'"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'SF=\"state/watchdog/spot-${SPOT_AGENT_NAME:-_}.md\"; [ -f \"$SF\" ] && grep -q \"^halt: true\" \"$SF\" && { echo \"HALT: values breach — blocked by Spot\" >&2; exit 2; }; CT=15; TF=\"state/watchdog/context-threshold.txt\"; [ -f \"$TF\" ] && CT=$(cat \"$TF\"); CEIL=\"${CONTEXT_THRESHOLD_PCT:-90}\"; [ \"$CT\" -gt \"$CEIL\" ] && CT=\"$CEIL\"; CF=\"state/watchdog/context-pct.txt\"; if [ -f \"$CF\" ]; then PCT=$(cut -d. -f1 < \"$CF\"); [ \"${PCT:-0}\" -ge \"$CT\" ] && { echo \"CONTEXT GATE: ${PCT}% >= ${CT}% threshold — waiting for Spot review\" >&2; exit 2; }; fi; exit 0'"
+          }
+        ]
+      }
+    ]
+  }
+}
