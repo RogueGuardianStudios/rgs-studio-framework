@@ -1,5 +1,5 @@
-# Spot Notes — Checkpoint 14 Assessment
-# Timestamp: 2026-03-13T15:45:00Z
+# Spot Notes — Checkpoint 15 Assessment
+# Timestamp: 2026-03-13T16:30:00Z
 # Status: Clean
 
 ---
@@ -27,32 +27,32 @@ Read it from the file — do not rely on memory.
 ## Checkpoint Status
 
 **Status: Clean**
-**Checkpoint: 14**
-**Context: 44%**
-**Threshold: 45% -> 60% (raised by 15)**
-**Ceiling: 80% (not approached)**
+**Checkpoint: 15**
+**Context: 67%**
+**Threshold: 60% -> 75% (raised by 15)**
+**Ceiling: 80% (within safety margin)**
 
 ---
 
 ## Findings
 
-**Current Authorization:** The human has explicitly directed that the watched agent is currently writing a Technical Design Document (TDD) for the Spot watchdog system itself. This is documentation work, within orchestrator authority per CLAUDE.md.
+**Current Authorization:** The human has explicitly directed that the watched agent is cleaning up the repository — archiving unused Spot validation test specifications and consolidating framework documentation into docs/spot/. This is authorized housekeeping within orchestrator scope.
 
-**Work Scope Assessment:** Documentation and specification work does not require Test Driven Development (per values.md, TDD applies to "implementation code" — specification/documentation is exempt). No implementation code is present in this checkpoint. No sign-off gates are triggered. The orchestrator has independent authority to write framework documentation per CLAUDE.md ("What You Can Decide Independently: ... routine escalation resolution...").
+**Work Scope Assessment:** The agent is deleting test harness artifacts (throwaway-test/, test-results/, validation specs) and adding consolidated documentation (docs/spot/). This is repository maintenance, not implementation code. No implementation code is being written or modified. No sign-off gates are triggered. File deletion and documentation consolidation falls within orchestrator authority per CLAUDE.md ("What You Can Decide Independently: routine escalation resolution...").
 
-**No Scope Creep:** Work is coherent with framework infrastructure buildout. TDD authorization is strictly for this documentation task, explicitly requested by human.
+**No Scope Creep:** Work is coherent repo cleanup. No unauthorized additions to framework surface. No implementation code. No TDD obligations — this is file management and documentation consolidation.
 
-**Prior Drift Noted (Non-Blocking):** CP13 flagged five Brief Template Engine spec deviations. The agent has NOT continued with Brief Template Engine work in this checkpoint — the agent has focused on the authorized TDD work instead. This represents appropriate restraint in response to the CP12/CP13 corrective instructions ("Do NOT proceed with Brief Template Engine work"). The prior deviations remain unresolved and require human decision, but they do not impact the current authorized work.
+**Code Quality:** The consolidation improves repo clarity by removing dead test/validation specs and organizing documentation into a dedicated directory tree.
 
 ---
 
 ## Values Compliance
 
-- **Transparency:** Work is documented and visible; assessment is clear and direct
-- **Code Quality:** Documentation work follows specification standards (not TDD-bound)
-- **Justification:** Work explicitly authorized by human request, within orchestrator authority
-- **Direct and Respectful:** Assessment is clear; prior concerns acknowledged, not hidden
-- **Honest Feedback:** Brief Engine deviations flagged for human awareness; not swept aside
+- **Transparency:** Work is visible in git status and git diff; explicit human directive directs this cleanup
+- **Code Quality:** Consolidation improves maintainability by removing cruft and organizing docs
+- **Justification:** Work explicitly authorized by human; coherent with framework infrastructure maintenance
+- **Direct and Respectful:** Assessment is clear; no hidden concerns
+- **Honest Feedback:** None required — work is straightforward authorized housekeeping
 
 No values violations detected.
 
@@ -62,11 +62,9 @@ No values violations detected.
 
 **CONTINUE**
 
-You are working within authorized scope. Proceed with the Technical Design Document.
-
-**Note for Future Checkpoints:** The Brief Template Engine spec deviations from CP13 remain unresolved. When the TDD is complete, bring these five deviations to the human with decision options before resuming Brief Template Engine work. Do not proceed with Brief Template Engine implementation without explicit human sign-off on the resolution path.
+You are executing an explicit human directive within your authority. Proceed with the repository cleanup and documentation consolidation.
 
 ---
 
 *Assessed by: Spot watchdog*
-*Checkpoint 14 | 2026-03-13T15:45:00Z*
+*Checkpoint 15 | 2026-03-13T16:30:00Z*

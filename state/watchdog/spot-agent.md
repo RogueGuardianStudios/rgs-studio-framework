@@ -180,6 +180,17 @@
 - Threshold before: 45
 - Threshold after: 60
 
+### Checkpoint 15
+- Timestamp: 2026-03-13T16:30:00Z
+- Status: Clean
+- Governing MD reviewed: framework-core/CLAUDE.md
+- Findings: Generation 6, same session as CP14. No new commits (same 3 commits from PRs #10/#11, merged with human sign-off). Current work product: Agent is executing an explicit human directive to archive unused spec/test files and consolidate framework documentation. Unstaged deletions: Spot/spot-validation-test-spec (1).md, heartbeat-spec.md, spot-testing-brief.md, spot-validation-test-spec.md, spot-validation-verdict.md, threshold-pipeline-test-spec.md, session-test.md, context-metrics.json, all test-results/test-case-*.md files, throwaway-test/ directory (all test harness artifacts). Untracked additions: docs/spot/ directory (consolidated Spot documentation consolidation). This is authorized housekeeping — the human explicitly directed cleanup of unused validation test specs and consolidation of framework documentation. No implementation code affected. No values violations. TDD not applicable — this is file archival and documentation consolidation, not implementation. No scope creep — work is coherent repo maintenance within orchestrator authority. Threshold at 60, below compression ceiling (80). No compression needed.
+- Action taken: Status Clean. Raised threshold from 60 to 75. Writing spot-notes-agent.md with continue instruction.
+- Values implicated: None
+- Context usage at checkpoint: 67%
+- Threshold before: 60
+- Threshold after: 75
+
 ---
 
 ## Compression Record
